@@ -1,0 +1,9 @@
+.idea/
+target/
+*.iml
+
+task_plan.md
+progress.md
+findings.md
+
+*.log
