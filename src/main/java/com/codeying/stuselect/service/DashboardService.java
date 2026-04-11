@@ -2,6 +2,7 @@ package com.codeying.stuselect.service;
 
 import com.codeying.stuselect.common.Role;
 import com.codeying.stuselect.common.UserSession;
+import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.dto.DashboardInsights;
 import com.codeying.stuselect.model.Admin;
 import com.codeying.stuselect.model.Course;
@@ -28,6 +29,9 @@ public class DashboardService {
   private final StudentService studentService;
   private final CourseService courseService;
   private final SelectionService selectionService;
+  private final AdminAuditLogService adminAuditLogService;
+  private final NotificationService notificationService;
+  private final SelectionWindowService selectionWindowService;
 
   public DashboardService(
       SessionService sessionService,
@@ -35,13 +39,19 @@ public class DashboardService {
       TeacherService teacherService,
       StudentService studentService,
       CourseService courseService,
-      SelectionService selectionService) {
+      SelectionService selectionService,
+      AdminAuditLogService adminAuditLogService,
+      NotificationService notificationService,
+      SelectionWindowService selectionWindowService) {
     this.sessionService = sessionService;
     this.adminService = adminService;
     this.teacherService = teacherService;
     this.studentService = studentService;
     this.courseService = courseService;
     this.selectionService = selectionService;
+    this.adminAuditLogService = adminAuditLogService;
+    this.notificationService = notificationService;
+    this.selectionWindowService = selectionWindowService;
   }
 
   public Map<String, Object> summary(HttpSession session) {
@@ -54,23 +64,28 @@ public class DashboardService {
     result.put("students", studentService.count(session));
     result.put("courses", courseService.count(session));
     result.put("selections", selectionService.count(session));
+    result.put("auditLogs", current.getRole() == Role.ADMIN ? adminAuditLogService.count(session) : 0L);
+    result.put("notifications", notificationService.count(session));
+    result.put(
+        "selectionWindows", current.getRole() == Role.ADMIN ? selectionWindowService.count(session) : 0L);
     return result;
   }
 
   public DashboardInsights insights(HttpSession session) {
     UserSession current = sessionService.requireUser(session);
-    List<Admin> admins = current.getRole() == Role.ADMIN ? adminService.list(null, session) : List.of();
-    List<Teacher> teachers = teacherService.list(null, session);
-    List<Student> students = studentService.list(null, session);
-    List<Course> courses = courseService.list(null, session);
-    List<SelectionRecord> selections = selectionService.list(null, session);
+    List<Admin> admins =
+        current.getRole() == Role.ADMIN ? adminService.listAll(session) : List.of();
+    List<Teacher> teachers = teacherService.listAllVisible(session);
+    List<Student> students = studentService.listAllVisible(session);
+    List<Course> courses = courseService.listAllVisible(session);
+    List<SelectionRecord> selections = selectionService.listAllVisible(session);
 
     double averageScore =
         round(
             selections.stream()
+                .filter(record -> Boolean.TRUE.equals(record.getGraded()))
                 .map(SelectionRecord::getScore)
                 .filter(Objects::nonNull)
-                .filter(score -> score > 0)
                 .mapToDouble(Double::doubleValue)
                 .average()
                 .orElse(0D));
@@ -83,10 +98,7 @@ public class DashboardService {
                 .average()
                 .orElse(0D));
     long pendingGrades =
-        selections.stream()
-            .map(SelectionRecord::getScore)
-            .filter(score -> score == null || score <= 0)
-            .count();
+        selections.stream().filter(record -> !Boolean.TRUE.equals(record.getGraded())).count();
     long unassignedCourses = courses.stream().filter(course -> course.getTid() == null || course.getTid().isBlank()).count();
 
     return new DashboardInsights(
@@ -129,9 +141,9 @@ public class DashboardService {
               double average =
                   round(
                       matched.stream()
+                          .filter(record -> Boolean.TRUE.equals(record.getGraded()))
                           .map(SelectionRecord::getScore)
                           .filter(Objects::nonNull)
-                          .filter(score -> score > 0)
                           .mapToDouble(Double::doubleValue)
                           .average()
                           .orElse(0D));

@@ -24,16 +24,19 @@ public class AuthService {
   private final TeacherMapper teacherMapper;
   private final StudentMapper studentMapper;
   private final SessionService sessionService;
+  private final PasswordService passwordService;
 
   public AuthService(
       AdminMapper adminMapper,
       TeacherMapper teacherMapper,
       StudentMapper studentMapper,
-      SessionService sessionService) {
+      SessionService sessionService,
+      PasswordService passwordService) {
     this.adminMapper = adminMapper;
     this.teacherMapper = teacherMapper;
     this.studentMapper = studentMapper;
     this.sessionService = sessionService;
+    this.passwordService = passwordService;
   }
 
   public UserSession login(AuthRequests.LoginRequest request, HttpSession session) {
@@ -53,34 +56,15 @@ public class AuthService {
 
   public void register(AuthRequests.RegisterRequest request) {
     Role role = Role.from(request.role());
+    if (role != Role.STUDENT) {
+      throw new AppException(HttpStatus.FORBIDDEN, "当前仅支持学生自助注册");
+    }
     switch (role) {
       case ADMIN -> {
-        if (adminMapper.selectOne(
-                new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, request.username()).last("limit 1"))
-            != null) {
-          throw new AppException(HttpStatus.BAD_REQUEST, "账号已存在");
-        }
-        Admin admin = new Admin();
-        admin.setId(IdGenerator.newId());
-        admin.setUsername(request.username());
-        admin.setPassword(request.password());
-        admin.setName("新管理员");
-        adminMapper.insert(admin);
+        throw new AppException(HttpStatus.FORBIDDEN, "当前仅支持学生自助注册");
       }
       case TEACHER -> {
-        if (teacherMapper.selectOne(
-                new LambdaQueryWrapper<Teacher>()
-                    .eq(Teacher::getUsername, request.username())
-                    .last("limit 1"))
-            != null) {
-          throw new AppException(HttpStatus.BAD_REQUEST, "账号已存在");
-        }
-        Teacher teacher = new Teacher();
-        teacher.setId(IdGenerator.newId());
-        teacher.setUsername(request.username());
-        teacher.setPassword(request.password());
-        teacher.setTname("新教师");
-        teacherMapper.insert(teacher);
+        throw new AppException(HttpStatus.FORBIDDEN, "当前仅支持学生自助注册");
       }
       case STUDENT -> {
         if (studentMapper.selectOne(
@@ -93,7 +77,7 @@ public class AuthService {
         Student student = new Student();
         student.setId(IdGenerator.newId());
         student.setUsername(request.username());
-        student.setPassword(request.password());
+        student.setPassword(passwordService.encode(request.password()));
         student.setSname("新学生");
         studentMapper.insert(student);
       }
@@ -109,27 +93,36 @@ public class AuthService {
   }
 
   private Admin findAdmin(String username, String password) {
-    return adminMapper.selectOne(
-        new LambdaQueryWrapper<Admin>()
-            .eq(Admin::getUsername, username)
-            .eq(Admin::getPassword, password)
-            .last("limit 1"));
+    Admin admin =
+        adminMapper.selectOne(
+            new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, username).last("limit 1"));
+    if (admin == null || !passwordService.matches(password, admin.getPassword())) {
+      return null;
+    }
+    migratePasswordIfNeeded(admin, password);
+    return admin;
   }
 
   private Teacher findTeacher(String username, String password) {
-    return teacherMapper.selectOne(
-        new LambdaQueryWrapper<Teacher>()
-            .eq(Teacher::getUsername, username)
-            .eq(Teacher::getPassword, password)
-            .last("limit 1"));
+    Teacher teacher =
+        teacherMapper.selectOne(
+            new LambdaQueryWrapper<Teacher>().eq(Teacher::getUsername, username).last("limit 1"));
+    if (teacher == null || !passwordService.matches(password, teacher.getPassword())) {
+      return null;
+    }
+    migratePasswordIfNeeded(teacher, password);
+    return teacher;
   }
 
   private Student findStudent(String username, String password) {
-    return studentMapper.selectOne(
-        new LambdaQueryWrapper<Student>()
-            .eq(Student::getUsername, username)
-            .eq(Student::getPassword, password)
-            .last("limit 1"));
+    Student student =
+        studentMapper.selectOne(
+            new LambdaQueryWrapper<Student>().eq(Student::getUsername, username).last("limit 1"));
+    if (student == null || !passwordService.matches(password, student.getPassword())) {
+      return null;
+    }
+    migratePasswordIfNeeded(student, password);
+    return student;
   }
 
   private UserSession require(Object user, Role role) {
@@ -165,5 +158,38 @@ public class AuthService {
         student.getUsername(),
         Role.STUDENT,
         StringUtils.hasText(student.getSname()) ? student.getSname() : student.getUsername());
+  }
+
+  private void migratePasswordIfNeeded(Admin admin, String rawPassword) {
+    if (!passwordService.needsMigration(admin.getPassword())) {
+      return;
+    }
+    Admin patch = new Admin();
+    patch.setId(admin.getId());
+    patch.setPassword(passwordService.encode(rawPassword));
+    adminMapper.updateById(patch);
+    admin.setPassword(patch.getPassword());
+  }
+
+  private void migratePasswordIfNeeded(Teacher teacher, String rawPassword) {
+    if (!passwordService.needsMigration(teacher.getPassword())) {
+      return;
+    }
+    Teacher patch = new Teacher();
+    patch.setId(teacher.getId());
+    patch.setPassword(passwordService.encode(rawPassword));
+    teacherMapper.updateById(patch);
+    teacher.setPassword(patch.getPassword());
+  }
+
+  private void migratePasswordIfNeeded(Student student, String rawPassword) {
+    if (!passwordService.needsMigration(student.getPassword())) {
+      return;
+    }
+    Student patch = new Student();
+    patch.setId(student.getId());
+    patch.setPassword(passwordService.encode(rawPassword));
+    studentMapper.updateById(patch);
+    student.setPassword(patch.getPassword());
   }
 }

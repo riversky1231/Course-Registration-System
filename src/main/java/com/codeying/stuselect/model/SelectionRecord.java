@@ -20,6 +20,14 @@ public class SelectionRecord {
   private String courseId;
   @TableField(exist = false)
   private String courseName;
+  @TableField(exist = false)
+  private Double courseCredit;
+  @TableField(exist = false)
+  private String courseDept;
+  @TableField(exist = false)
+  private Integer maxStudents;
+  @TableField(exist = false)
+  private String timeSlot;
   @Size(max = 32, message = "学生编号长度不能超过32位")
   @TableField("studentId")
   private String studentId;
@@ -30,6 +38,7 @@ public class SelectionRecord {
   private String teacherId;
   @TableField(exist = false)
   private String teacherName;
+  private Boolean graded;
   @DecimalMin(value = "0.0", message = "成绩不能小于0")
   @DecimalMax(value = "100.0", message = "成绩不能大于100")
   private Double score;
@@ -58,6 +67,22 @@ public class SelectionRecord {
 
   public void setCourseName(String courseName) {
     this.courseName = courseName;
+  }
+
+  public Double getCourseCredit() {
+    return courseCredit;
+  }
+
+  public void setCourseCredit(Double courseCredit) {
+    this.courseCredit = courseCredit;
+  }
+
+  public String getCourseDept() {
+    return courseDept;
+  }
+
+  public void setCourseDept(String courseDept) {
+    this.courseDept = courseDept;
   }
 
   public String getStudentId() {
@@ -92,6 +117,14 @@ public class SelectionRecord {
     this.teacherName = teacherName;
   }
 
+  public Boolean getGraded() {
+    return graded;
+  }
+
+  public void setGraded(Boolean graded) {
+    this.graded = graded;
+  }
+
   public Double getScore() {
     return score;
   }
@@ -106,5 +139,21 @@ public class SelectionRecord {
 
   public void setCreateTime(LocalDateTime createTime) {
     this.createTime = createTime;
+  }
+
+  public Integer getMaxStudents() {
+    return maxStudents;
+  }
+
+  public void setMaxStudents(Integer maxStudents) {
+    this.maxStudents = maxStudents;
+  }
+
+  public String getTimeSlot() {
+    return timeSlot;
+  }
+
+  public void setTimeSlot(String timeSlot) {
+    this.timeSlot = timeSlot;
   }
 }

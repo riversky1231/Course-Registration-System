@@ -3,6 +3,8 @@ package com.codeying.stuselect.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codeying.stuselect.common.AppException;
 import com.codeying.stuselect.common.IdGenerator;
+import com.codeying.stuselect.common.PageQuery;
+import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.common.Role;
 import com.codeying.stuselect.common.UserSession;
 import com.codeying.stuselect.mapper.StudentMapper;
@@ -19,16 +21,25 @@ public class StudentService {
 
   private final StudentMapper studentMapper;
   private final SessionService sessionService;
+  private final PasswordService passwordService;
+  private final AdminAuditLogService adminAuditLogService;
 
-  public StudentService(StudentMapper studentMapper, SessionService sessionService) {
+  public StudentService(
+      StudentMapper studentMapper,
+      SessionService sessionService,
+      PasswordService passwordService,
+      AdminAuditLogService adminAuditLogService) {
     this.studentMapper = studentMapper;
     this.sessionService = sessionService;
+    this.passwordService = passwordService;
+    this.adminAuditLogService = adminAuditLogService;
   }
 
-  public List<Student> list(String keyword, HttpSession session) {
+  public PageResult<Student> list(
+      String keyword, Integer page, Integer pageSize, HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     if (current.getRole() == Role.STUDENT) {
-      return List.of(require(current.getId()));
+      return PageResult.of(java.util.List.of(require(current.getId())), PageQuery.of(page, pageSize));
     }
     LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<>();
     if (StringUtils.hasText(keyword)) {
@@ -47,34 +58,53 @@ public class StudentService {
                   .like(Student::getSclass, keyword));
     }
     wrapper.orderByDesc(Student::getId);
-    return studentMapper.selectList(wrapper);
+    return PageResult.of(studentMapper.selectList(wrapper), PageQuery.of(page, pageSize));
+  }
+
+  public List<Student> listAllVisible(HttpSession session) {
+    UserSession current = sessionService.requireUser(session);
+    if (current.getRole() == Role.STUDENT) {
+      return List.of(require(current.getId()));
+    }
+    return studentMapper.selectList(new LambdaQueryWrapper<Student>().orderByDesc(Student::getId));
   }
 
   public Student create(Student student, HttpSession session) {
-    sessionService.requireRole(session, Role.ADMIN);
+    UserSession current = sessionService.requireRole(session, Role.ADMIN);
     if (!StringUtils.hasText(student.getUsername()) || !StringUtils.hasText(student.getPassword())) {
       throw new AppException(HttpStatus.BAD_REQUEST, "用户名和密码不能为空");
     }
-    if (findByUsername(student.getUsername()) != null) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "学生账号已存在");
-    }
+    ensureUsernameAvailable(student.getUsername(), null);
     student.setId(IdGenerator.newId());
+    student.setPassword(passwordService.encode(student.getPassword()));
     studentMapper.insert(student);
+    adminAuditLogService.record(
+        current, "新增", "学生", student.getId(), displayName(student), "账号：" + student.getUsername());
     return studentMapper.selectById(student.getId());
   }
 
   public Student update(String id, Student student, HttpSession session) {
-    sessionService.requireRole(session, Role.ADMIN);
-    Student current = require(id);
-    mergeStudent(current, student);
-    studentMapper.updateById(current);
+    UserSession actor = sessionService.requireRole(session, Role.ADMIN);
+    Student target = require(id);
+    ensureUsernameAvailable(defaultValue(student.getUsername(), target.getUsername()), target.getId());
+    mergeStudent(target, student);
+    studentMapper.updateById(target);
+    adminAuditLogService.record(
+        actor,
+        "编辑",
+        "学生",
+        target.getId(),
+        displayName(target),
+        "账号：" + target.getUsername() + "，学号：" + defaultValue(target.getNumb(), "-"));
     return studentMapper.selectById(id);
   }
 
   public void delete(String id, HttpSession session) {
-    sessionService.requireRole(session, Role.ADMIN);
-    require(id);
+    UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    Student target = require(id);
     studentMapper.deleteById(id);
+    adminAuditLogService.record(
+        current, "删除", "学生", target.getId(), displayName(target), "账号：" + target.getUsername());
   }
 
   public Student getProfile(HttpSession session) {
@@ -85,6 +115,7 @@ public class StudentService {
   public Student updateProfile(Student input, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.STUDENT);
     Student student = require(current.getId());
+    ensureUsernameAvailable(defaultValue(input.getUsername(), student.getUsername()), student.getId());
     mergeStudent(student, input);
     studentMapper.updateById(student);
     return studentMapper.selectById(student.getId());
@@ -110,14 +141,22 @@ public class StudentService {
     return student;
   }
 
+  public void lockForSelection(String id) {
+    Student student = studentMapper.selectByIdForUpdate(id);
+    if (student == null) {
+      throw new AppException(HttpStatus.NOT_FOUND, "学生不存在");
+    }
+  }
+
   private void mergeStudent(Student target, Student input) {
     target.setUsername(defaultValue(input.getUsername(), target.getUsername()));
-    target.setPassword(defaultValue(input.getPassword(), target.getPassword()));
+    target.setPassword(passwordService.encodeIfProvided(input.getPassword(), target.getPassword()));
     target.setNumb(input.getNumb());
     target.setSname(input.getSname());
     target.setSdept(input.getSdept());
     target.setSbirthday(input.getSbirthday());
     target.setTele(input.getTele());
+    target.setEmail(input.getEmail());
     target.setSsex(input.getSsex());
     target.setAge(input.getAge());
     target.setSmajor(input.getSmajor());
@@ -126,5 +165,19 @@ public class StudentService {
 
   private String defaultValue(String input, String fallback) {
     return StringUtils.hasText(input) ? input : fallback;
+  }
+
+  private void ensureUsernameAvailable(String username, String currentId) {
+    if (!StringUtils.hasText(username)) {
+      return;
+    }
+    Student existed = findByUsername(username);
+    if (existed != null && !existed.getId().equals(currentId)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "学生账号已存在");
+    }
+  }
+
+  private String displayName(Student student) {
+    return StringUtils.hasText(student.getSname()) ? student.getSname() : student.getUsername();
   }
 }

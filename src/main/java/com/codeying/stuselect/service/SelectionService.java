@@ -3,48 +3,72 @@ package com.codeying.stuselect.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codeying.stuselect.common.AppException;
 import com.codeying.stuselect.common.IdGenerator;
+import com.codeying.stuselect.common.PageQuery;
+import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.common.Role;
 import com.codeying.stuselect.common.UserSession;
+import com.codeying.stuselect.dto.StudentGradeReport;
 import com.codeying.stuselect.mapper.SelectionMapper;
 import com.codeying.stuselect.model.Course;
 import com.codeying.stuselect.model.SelectionRecord;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class SelectionService {
 
   private final SelectionMapper selectionMapper;
   private final CourseService courseService;
+  private final StudentService studentService;
   private final SessionService sessionService;
+  private final NotificationService notificationService;
+  private final SelectionWindowService selectionWindowService;
 
   public SelectionService(
       SelectionMapper selectionMapper,
       CourseService courseService,
-      SessionService sessionService) {
+      StudentService studentService,
+      SessionService sessionService,
+      NotificationService notificationService,
+      SelectionWindowService selectionWindowService) {
     this.selectionMapper = selectionMapper;
     this.courseService = courseService;
+    this.studentService = studentService;
     this.sessionService = sessionService;
+    this.notificationService = notificationService;
+    this.selectionWindowService = selectionWindowService;
   }
 
-  public List<SelectionRecord> list(String keyword, HttpSession session) {
+  public PageResult<SelectionRecord> list(
+      String keyword, Integer page, Integer pageSize, HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     String studentId = current.getRole() == Role.STUDENT ? current.getId() : null;
     String teacherId = current.getRole() == Role.TEACHER ? current.getId() : null;
-    return selectionMapper.selectJoinedList(keyword, studentId, teacherId);
+    return PageResult.of(
+        selectionMapper.selectJoinedList(keyword, studentId, teacherId),
+        PageQuery.of(page, pageSize));
   }
 
+  public List<SelectionRecord> listAllVisible(HttpSession session) {
+    UserSession current = sessionService.requireUser(session);
+    String studentId = current.getRole() == Role.STUDENT ? current.getId() : null;
+    String teacherId = current.getRole() == Role.TEACHER ? current.getId() : null;
+    return selectionMapper.selectJoinedList(null, studentId, teacherId);
+  }
+
+  @Transactional
   public SelectionRecord create(SelectionRecord record, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN, Role.STUDENT);
+    selectionWindowService.requireOpen("SELECT", current);
     String studentId = current.getRole() == Role.STUDENT ? current.getId() : record.getStudentId();
-    Course course = courseService.require(record.getCourseId());
-    if (selectionMapper.selectByCourseAndStudent(record.getCourseId(), studentId) != null) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "该学生已选过这门课");
-    }
+    Course course = validateSelectionConstraints(null, record.getCourseId(), studentId);
     String teacherId = course.getTid();
     String id = IdGenerator.newId();
     SelectionRecord insert = new SelectionRecord();
@@ -52,12 +76,16 @@ public class SelectionService {
     insert.setCourseId(record.getCourseId());
     insert.setStudentId(studentId);
     insert.setTeacherId(teacherId);
-    insert.setScore(current.getRole() == Role.ADMIN ? record.getScore() : 0D);
+    insert.setScore(current.getRole() == Role.ADMIN ? record.getScore() : null);
+    insert.setGraded(current.getRole() == Role.ADMIN && record.getScore() != null);
     insert.setCreateTime(LocalDateTime.now());
     selectionMapper.insert(insert);
-    return selectionMapper.selectJoinedById(id);
+    SelectionRecord created = selectionMapper.selectJoinedById(id);
+    notificationService.notifySelectionCreated(created.getStudentId(), created.getCourseName(), created.getTimeSlot());
+    return created;
   }
 
+  @Transactional
   public SelectionRecord update(String id, SelectionRecord record, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);
     SelectionRecord existed = require(id);
@@ -68,28 +96,37 @@ public class SelectionService {
       SelectionRecord update = new SelectionRecord();
       update.setId(id);
       update.setScore(record.getScore());
+      update.setGraded(record.getScore() != null);
       selectionMapper.updateById(update);
-      return selectionMapper.selectJoinedById(id);
+      SelectionRecord refreshed = selectionMapper.selectJoinedById(id);
+      notifyGradeIfPublished(existed, refreshed);
+      return refreshed;
     }
 
-    Course course = courseService.require(record.getCourseId());
+    Course course = validateSelectionConstraints(id, record.getCourseId(), record.getStudentId());
     SelectionRecord update = new SelectionRecord();
     update.setId(id);
     update.setCourseId(record.getCourseId());
     update.setStudentId(record.getStudentId());
     update.setTeacherId(course.getTid());
     update.setScore(record.getScore());
+    update.setGraded(record.getScore() != null);
     selectionMapper.updateById(update);
-    return selectionMapper.selectJoinedById(id);
+    SelectionRecord refreshed = selectionMapper.selectJoinedById(id);
+    notifyGradeIfPublished(existed, refreshed);
+    return refreshed;
   }
 
+  @Transactional
   public void delete(String id, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN, Role.STUDENT);
+    selectionWindowService.requireOpen("DROP", current);
     SelectionRecord existed = require(id);
     if (current.getRole() == Role.STUDENT && !current.getId().equals(existed.getStudentId())) {
       throw new AppException(HttpStatus.FORBIDDEN, "只能退选自己的课程");
     }
     selectionMapper.deleteById(id);
+    notificationService.notifySelectionDropped(existed.getStudentId(), existed.getCourseName());
   }
 
   public long count(HttpSession session) {
@@ -112,5 +149,140 @@ public class SelectionService {
       throw new AppException(HttpStatus.NOT_FOUND, "选课记录不存在");
     }
     return record;
+  }
+
+  public StudentGradeReport gradeReport(
+      String keyword, Integer page, Integer pageSize, HttpSession session) {
+    UserSession current = sessionService.requireRole(session, Role.STUDENT);
+    List<SelectionRecord> all = selectionMapper.selectJoinedList(null, current.getId(), null);
+    List<SelectionRecord> filtered =
+        all.stream()
+            .filter(
+                item ->
+                    !StringUtils.hasText(keyword)
+                        || contains(item.getCourseName(), keyword)
+                        || contains(item.getTeacherName(), keyword)
+                        || contains(item.getTimeSlot(), keyword))
+            .toList();
+
+    double totalCredits =
+        round(
+            all.stream()
+                .map(SelectionRecord::getCourseCredit)
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .sum());
+    double earnedCredits =
+        round(
+            all.stream()
+                .filter(this::isPassed)
+                .map(SelectionRecord::getCourseCredit)
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .sum());
+    long gradedCourses = all.stream().filter(this::isGraded).count();
+    long pendingCourses = all.size() - gradedCourses;
+    double averageScore =
+        round(
+            all.stream()
+                .filter(this::isGraded)
+                .map(SelectionRecord::getScore)
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0D));
+    double gpaCredits =
+        all.stream()
+            .filter(this::isGraded)
+            .map(SelectionRecord::getCourseCredit)
+            .filter(Objects::nonNull)
+            .mapToDouble(Double::doubleValue)
+            .sum();
+    double gpaValue =
+        gpaCredits <= 0
+            ? 0D
+            : round(
+                all.stream()
+                        .filter(this::isGraded)
+                        .mapToDouble(
+                            item -> toGpa(item.getScore()) * (item.getCourseCredit() == null ? 0D : item.getCourseCredit()))
+                        .sum()
+                    / gpaCredits);
+
+    return new StudentGradeReport(
+        gpaValue,
+        averageScore,
+        earnedCredits,
+        totalCredits,
+        gradedCourses,
+        pendingCourses,
+        PageResult.of(filtered, PageQuery.of(page, pageSize)));
+  }
+
+  private Course validateSelectionConstraints(String selectionId, String courseId, String studentId) {
+    if (!StringUtils.hasText(courseId) || !StringUtils.hasText(studentId)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "课程和学生不能为空");
+    }
+    studentService.lockForSelection(studentId);
+    Course course = courseService.requireForUpdate(courseId);
+
+    SelectionRecord duplicated =
+        StringUtils.hasText(selectionId)
+            ? selectionMapper.selectByCourseAndStudentExcludingId(courseId, studentId, selectionId)
+            : selectionMapper.selectByCourseAndStudent(courseId, studentId);
+    if (duplicated != null) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "该学生已选过这门课");
+    }
+    if (course.getMaxStudents() != null && course.getMaxStudents() > 0) {
+      long currentCount = selectionMapper.countByCourse(courseId, selectionId);
+      if (currentCount >= course.getMaxStudents()) {
+        throw new AppException(
+            HttpStatus.BAD_REQUEST, "该课程选课人数已达上限（" + course.getMaxStudents() + "人），无法再选");
+      }
+    }
+
+    if (StringUtils.hasText(course.getTimeSlot())) {
+      long conflictCount = selectionMapper.countTimeSlotConflict(studentId, course.getTimeSlot(), selectionId);
+      if (conflictCount > 0) {
+        throw new AppException(HttpStatus.BAD_REQUEST, "上课时间与已选课程冲突：" + course.getTimeSlot());
+      }
+    }
+    return course;
+  }
+
+  private void notifyGradeIfPublished(SelectionRecord before, SelectionRecord after) {
+    if (after == null || !isGraded(after)) {
+      return;
+    }
+    if (before != null
+        && Objects.equals(before.getGraded(), after.getGraded())
+        && Objects.equals(before.getScore(), after.getScore())) {
+      return;
+    }
+    notificationService.notifyGradePublished(after.getStudentId(), after.getCourseName(), after.getScore());
+  }
+
+  private boolean contains(String source, String keyword) {
+    return StringUtils.hasText(source)
+        && source.toLowerCase().contains(keyword.trim().toLowerCase());
+  }
+
+  private boolean isGraded(SelectionRecord record) {
+    return Boolean.TRUE.equals(record.getGraded());
+  }
+
+  private boolean isPassed(SelectionRecord record) {
+    return isGraded(record) && record.getScore() != null && record.getScore() >= 60;
+  }
+
+  private double toGpa(Double score) {
+    if (score == null || score < 60) {
+      return 0D;
+    }
+    return (score - 50D) / 10D;
+  }
+
+  private double round(double value) {
+    return Math.round(value * 100D) / 100D;
   }
 }

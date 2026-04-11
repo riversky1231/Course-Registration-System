@@ -3,6 +3,8 @@ package com.codeying.stuselect.model;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -17,6 +19,7 @@ public class Student {
   private String id;
   @Size(max = 20, message = "学生用户名长度不能超过20位")
   private String username;
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Size(max = 20, message = "学生密码长度不能超过20位")
   private String password;
   @Size(max = 32, message = "学号长度不能超过32位")
@@ -28,6 +31,9 @@ public class Student {
   private LocalDateTime sbirthday;
   @Pattern(regexp = "^(|1\\d{10})$", message = "学生电话格式不正确")
   private String tele;
+  @Email(message = "学生邮箱格式不正确")
+  @Size(max = 255, message = "学生邮箱长度不能超过255位")
+  private String email;
   @Pattern(regexp = "^(|男|女)$", message = "学生性别只能填写男或女")
   private String ssex;
   @Min(value = 0, message = "学生年龄不能小于0")
@@ -100,6 +106,14 @@ public class Student {
 
   public void setTele(String tele) {
     this.tele = tele;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public String getSsex() {

@@ -1,6 +1,7 @@
 package com.codeying.stuselect.controller;
 
 import com.codeying.stuselect.common.ApiResponse;
+import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.model.SelectionRecord;
 import jakarta.validation.Valid;
 import com.codeying.stuselect.service.SelectionService;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/selections")
 public class SelectionController {
@@ -28,9 +27,12 @@ public class SelectionController {
   }
 
   @GetMapping
-  public ApiResponse<List<SelectionRecord>> list(
-      @RequestParam(required = false) String keyword, HttpSession session) {
-    return ApiResponse.success(selectionService.list(keyword, session));
+  public ApiResponse<PageResult<SelectionRecord>> list(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) Integer page,
+      @RequestParam(required = false) Integer pageSize,
+      HttpSession session) {
+    return ApiResponse.success(selectionService.list(keyword, page, pageSize, session));
   }
 
   @PostMapping

@@ -3,6 +3,7 @@ package com.codeying.stuselect.model;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -13,6 +14,7 @@ public class Admin {
   private String id;
   @Size(max = 20, message = "管理员用户名长度不能超过20位")
   private String username;
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Size(max = 20, message = "管理员密码长度不能超过20位")
   private String password;
   @Size(max = 18, message = "管理员姓名长度不能超过18位")

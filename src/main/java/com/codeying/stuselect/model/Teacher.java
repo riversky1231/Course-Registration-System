@@ -3,6 +3,7 @@ package com.codeying.stuselect.model;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -17,6 +18,7 @@ public class Teacher {
   private String id;
   @Size(max = 20, message = "教师用户名长度不能超过20位")
   private String username;
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Size(max = 20, message = "教师密码长度不能超过20位")
   private String password;
   @Size(max = 32, message = "教工号长度不能超过32位")

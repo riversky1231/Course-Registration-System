@@ -2,10 +2,10 @@ package com.codeying.stuselect.controller;
 
 import com.codeying.stuselect.common.ApiResponse;
 import com.codeying.stuselect.common.PageResult;
-import com.codeying.stuselect.model.Admin;
-import jakarta.validation.Valid;
-import com.codeying.stuselect.service.AdminService;
+import com.codeying.stuselect.model.SelectionWindow;
+import com.codeying.stuselect.service.SelectionWindowService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,38 +17,41 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admins")
-public class AdminController {
+@RequestMapping("/api/selection-windows")
+public class SelectionWindowController {
 
-  private final AdminService adminService;
+  private final SelectionWindowService selectionWindowService;
 
-  public AdminController(AdminService adminService) {
-    this.adminService = adminService;
+  public SelectionWindowController(SelectionWindowService selectionWindowService) {
+    this.selectionWindowService = selectionWindowService;
   }
 
   @GetMapping
-  public ApiResponse<PageResult<Admin>> list(
+  public ApiResponse<PageResult<SelectionWindow>> list(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer pageSize,
       HttpSession session) {
-    return ApiResponse.success(adminService.list(keyword, page, pageSize, session));
+    return ApiResponse.success(selectionWindowService.list(keyword, page, pageSize, session));
   }
 
   @PostMapping
-  public ApiResponse<Admin> create(@Valid @RequestBody Admin admin, HttpSession session) {
-    return ApiResponse.success(adminService.create(admin, session));
+  public ApiResponse<SelectionWindow> create(
+      @Valid @RequestBody SelectionWindow selectionWindow, HttpSession session) {
+    return ApiResponse.success(selectionWindowService.create(selectionWindow, session));
   }
 
   @PutMapping("/{id}")
-  public ApiResponse<Admin> update(
-      @PathVariable String id, @Valid @RequestBody Admin admin, HttpSession session) {
-    return ApiResponse.success(adminService.update(id, admin, session));
+  public ApiResponse<SelectionWindow> update(
+      @PathVariable String id,
+      @Valid @RequestBody SelectionWindow selectionWindow,
+      HttpSession session) {
+    return ApiResponse.success(selectionWindowService.update(id, selectionWindow, session));
   }
 
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable String id, HttpSession session) {
-    adminService.delete(id, session);
+    selectionWindowService.delete(id, session);
     return ApiResponse.successMessage("删除成功");
   }
 }

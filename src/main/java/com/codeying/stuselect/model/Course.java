@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 @TableName("tb_course")
@@ -26,6 +27,12 @@ public class Course {
   private String teacherName;
   @Size(max = 255, message = "课程简介长度不能超过255位")
   private String jianjie;
+  @Size(max = 255, message = "开课学院长度不能超过255位")
+  private String dept;
+  @Min(value = 0, message = "选课容量不能小于0")
+  private Integer maxStudents = 0;
+  @Size(max = 64, message = "上课时间段长度不能超过64位")
+  private String timeSlot;
 
   public String getId() {
     return id;
@@ -81,5 +88,29 @@ public class Course {
 
   public void setJianjie(String jianjie) {
     this.jianjie = jianjie;
+  }
+
+  public String getDept() {
+    return dept;
+  }
+
+  public void setDept(String dept) {
+    this.dept = dept;
+  }
+
+  public Integer getMaxStudents() {
+    return maxStudents;
+  }
+
+  public void setMaxStudents(Integer maxStudents) {
+    this.maxStudents = maxStudents;
+  }
+
+  public String getTimeSlot() {
+    return timeSlot;
+  }
+
+  public void setTimeSlot(String timeSlot) {
+    this.timeSlot = timeSlot;
   }
 }

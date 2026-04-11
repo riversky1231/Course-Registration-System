@@ -1,6 +1,7 @@
 package com.codeying.stuselect.controller;
 
 import com.codeying.stuselect.common.ApiResponse;
+import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.model.Course;
 import jakarta.validation.Valid;
 import com.codeying.stuselect.service.CourseService;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
@@ -28,9 +27,19 @@ public class CourseController {
   }
 
   @GetMapping
-  public ApiResponse<List<Course>> list(
-      @RequestParam(required = false) String keyword, HttpSession session) {
-    return ApiResponse.success(courseService.list(keyword, session));
+  public ApiResponse<PageResult<Course>> list(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String dept,
+      @RequestParam(required = false) String teacherId,
+      @RequestParam(required = false) Double minScore,
+      @RequestParam(required = false) Double maxScore,
+      @RequestParam(required = false) Boolean onlyAvailable,
+      @RequestParam(required = false) Integer page,
+      @RequestParam(required = false) Integer pageSize,
+      HttpSession session) {
+    return ApiResponse.success(
+        courseService.list(
+            keyword, dept, teacherId, minScore, maxScore, onlyAvailable, page, pageSize, session));
   }
 
   @PostMapping
