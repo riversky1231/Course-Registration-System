@@ -20,84 +20,96 @@
   </section>
 
   <section v-else-if="!session" class="landing-shell">
-    <div class="login-ornament login-ornament-a"></div>
-    <div class="login-ornament login-ornament-b"></div>
+    <div class="landing-noise"></div>
+    <div class="landing-glow landing-glow-a"></div>
+    <div class="landing-glow landing-glow-b"></div>
 
-    <div class="login-shell">
-      <div class="auth-dock">
-        <div class="auth-icon">选</div>
-        <div class="auth-top">
-          <p class="eyebrow">{{ semesterLabel }}</p>
-          <h2>{{ authMode === 'login' ? '登录系统' : '注册账号' }}</h2>
-          <p>{{ authMode === 'login' ? '请输入账号和身份进入系统。' : '创建新的校园账号。' }}</p>
+    <div class="landing-grid">
+      <div class="landing-brand-panel">
+        <p class="semester-pill">{{ semesterLabel }}</p>
+        <div class="landing-copy">
+          <h1>学生选课系统</h1>
+          <p>统一处理课程浏览、学生选课、成绩录入与学期窗口管理。</p>
         </div>
 
-        <div class="auth-tabs">
-          <button :class="{ active: authMode === 'login' }" type="button" @click="authMode = 'login'">登录</button>
-          <button :class="{ active: authMode === 'register' }" type="button" @click="authMode = 'register'">注册</button>
+        <div class="landing-illustration">
+          <div class="illustration-orb illustration-orb-a"></div>
+          <div class="illustration-orb illustration-orb-b"></div>
+          <div class="illustration-grid"></div>
+          <div class="illustration-caption">
+            <span>Course Portal</span>
+            <strong>Enrollment Access</strong>
+          </div>
         </div>
+      </div>
 
-        <p v-if="message.text" class="message" :class="message.type">{{ message.text }}</p>
+      <div class="login-shell">
+        <div class="auth-dock">
+          <div class="auth-top auth-top-card">
+            <p class="eyebrow auth-kicker">Portal Access</p>
+            <h2>{{ authMode === 'login' ? '登录系统' : '注册账号' }}</h2>
+            <p>{{ authMode === 'login' ? '请输入账号、密码和身份进入系统。' : '创建新的学生账号以进入选课平台。' }}</p>
+          </div>
 
-        <form v-if="authMode === 'login'" class="auth-form" @submit.prevent="login">
-          <label>
-            <span>用户名</span>
-            <input v-model.trim="loginForm.username" type="text" maxlength="20" placeholder="请输入账号">
-          </label>
-          <label>
-            <span>密码</span>
-            <input v-model="loginForm.password" type="password" maxlength="20" placeholder="请输入密码">
-          </label>
-          <label>
-            <span>登录身份</span>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input v-model="loginForm.role" type="radio" value="admin">
-                <span>管理员</span>
-              </label>
-              <label class="radio-option">
-                <input v-model="loginForm.role" type="radio" value="teacher">
-                <span>教师</span>
-              </label>
-              <label class="radio-option">
-                <input v-model="loginForm.role" type="radio" value="student">
-                <span>学生</span>
-              </label>
-            </div>
-          </label>
-          <button class="primary-button wide" type="submit" :disabled="pending">
-            {{ pending ? '提交中...' : '进入学生选课系统' }}
-          </button>
-        </form>
+          <div class="auth-tabs auth-tabs-card">
+            <button :class="{ active: authMode === 'login' }" type="button" @click="authMode = 'login'">登录</button>
+            <button :class="{ active: authMode === 'register' }" type="button" @click="authMode = 'register'">注册</button>
+          </div>
 
-        <form v-else class="auth-form" @submit.prevent="register">
-          <label>
-            <span>用户名</span>
-            <input v-model.trim="registerForm.username" type="text" maxlength="20" placeholder="创建登录账号">
-          </label>
-          <label>
-            <span>密码</span>
-            <input v-model="registerForm.password" type="password" maxlength="20" placeholder="创建登录密码">
-          </label>
-          <label>
-            <span>注册身份</span>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input v-model="registerForm.role" type="radio" value="student">
-                <span>学生</span>
-              </label>
-            </div>
-          </label>
-          <p class="module-copy">当前仅开放学生自助注册。教师和管理员账号请由管理员在系统内创建。</p>
-          <button class="primary-button wide" type="submit" :disabled="pending">
-            {{ pending ? '提交中...' : '创建账号' }}
-          </button>
-        </form>
+          <p v-if="message.text" class="message" :class="message.type">{{ message.text }}</p>
+
+          <form v-if="authMode === 'login'" class="auth-form auth-form-card" @submit.prevent="login">
+            <label>
+              <span>用户名</span>
+              <input v-model.trim="loginForm.username" type="text" maxlength="20" placeholder="请输入账号">
+            </label>
+            <label>
+              <span>密码</span>
+              <input v-model="loginForm.password" type="password" maxlength="20" placeholder="请输入密码">
+            </label>
+            <label>
+              <span>登录身份</span>
+              <select v-model="loginForm.role">
+                <option value="admin">管理员</option>
+                <option value="teacher">教师</option>
+                <option value="student">学生</option>
+              </select>
+            </label>
+            <button class="primary-button primary-button-accent wide" type="submit" :disabled="pending">
+              {{ pending ? '提交中...' : '进入学生选课系统' }}
+            </button>
+          </form>
+
+          <form v-else class="auth-form auth-form-card" @submit.prevent="register">
+            <label>
+              <span>用户名</span>
+              <input v-model.trim="registerForm.username" type="text" maxlength="20" placeholder="创建登录账号">
+            </label>
+            <label>
+              <span>密码</span>
+              <input v-model="registerForm.password" type="password" maxlength="20" placeholder="创建登录密码">
+            </label>
+            <label>
+              <span>注册身份</span>
+              <select v-model="registerForm.role">
+                <option value="student">学生</option>
+              </select>
+            </label>
+            <p class="module-copy">当前仅开放学生自助注册。教师和管理员账号请由管理员在系统内创建。</p>
+            <button class="primary-button primary-button-accent wide" type="submit" :disabled="pending">
+              {{ pending ? '提交中...' : '创建账号' }}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </section>
 
   <section v-else class="workspace-shell">
+    <div class="workspace-noise"></div>
+    <div class="workspace-glow workspace-glow-a"></div>
+    <div class="workspace-glow workspace-glow-b"></div>
+
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="brand-lockup">
