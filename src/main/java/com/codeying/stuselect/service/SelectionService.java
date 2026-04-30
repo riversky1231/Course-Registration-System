@@ -30,6 +30,7 @@ public class SelectionService {
   private final SessionService sessionService;
   private final NotificationService notificationService;
   private final SelectionWindowService selectionWindowService;
+  private final CourseValidationService courseValidationService;
 
   public SelectionService(
       SelectionMapper selectionMapper,
@@ -37,13 +38,15 @@ public class SelectionService {
       StudentService studentService,
       SessionService sessionService,
       NotificationService notificationService,
-      SelectionWindowService selectionWindowService) {
+      SelectionWindowService selectionWindowService,
+      CourseValidationService courseValidationService) {
     this.selectionMapper = selectionMapper;
     this.courseService = courseService;
     this.studentService = studentService;
     this.sessionService = sessionService;
     this.notificationService = notificationService;
     this.selectionWindowService = selectionWindowService;
+    this.courseValidationService = courseValidationService;
   }
 
   public PageResult<SelectionRecord> list(
@@ -226,6 +229,7 @@ public class SelectionService {
     studentService.lockForSelection(studentId);
     Course course = courseService.requireForUpdate(courseId);
 
+    // 校验1：重复选课检测
     SelectionRecord duplicated =
         StringUtils.hasText(selectionId)
             ? selectionMapper.selectByCourseAndStudentExcludingId(courseId, studentId, selectionId)
@@ -233,6 +237,8 @@ public class SelectionService {
     if (duplicated != null) {
       throw new AppException(HttpStatus.BAD_REQUEST, "该学生已选过这门课");
     }
+
+    // 校验2：课程容量检测
     if (course.getMaxStudents() != null && course.getMaxStudents() > 0) {
       long currentCount = selectionMapper.countByCourse(courseId, selectionId);
       if (currentCount >= course.getMaxStudents()) {
@@ -241,13 +247,47 @@ public class SelectionService {
       }
     }
 
+    // 校验3：时间冲突检测
     if (StringUtils.hasText(course.getTimeSlot())) {
       long conflictCount = selectionMapper.countTimeSlotConflict(studentId, course.getTimeSlot(), selectionId);
       if (conflictCount > 0) {
         throw new AppException(HttpStatus.BAD_REQUEST, "上课时间与已选课程冲突：" + course.getTimeSlot());
       }
     }
+
+    // 计算学生当前GPA（用于学分上限校验）
+    double currentGPA = calculateStudentGPA(studentId);
+
+    // 校验4-8：新增的智能冲突检测（年级权限、先修课程、互斥课程、类型限选、学分上限）
+    courseValidationService.validateAll(course, studentId, selectionId, currentGPA);
+
     return course;
+  }
+
+  /**
+   * 计算学生当前GPA
+   */
+  private double calculateStudentGPA(String studentId) {
+    List<SelectionRecord> all = selectionMapper.selectJoinedList(null, studentId, null);
+    double gpaCredits =
+        all.stream()
+            .filter(this::isGraded)
+            .map(SelectionRecord::getCourseCredit)
+            .filter(Objects::nonNull)
+            .mapToDouble(Double::doubleValue)
+            .sum();
+    if (gpaCredits <= 0) {
+      return 0D;
+    }
+    double gpaSum =
+        all.stream()
+            .filter(this::isGraded)
+            .mapToDouble(
+                item ->
+                    toGpa(item.getScore())
+                        * (item.getCourseCredit() == null ? 0D : item.getCourseCredit()))
+            .sum();
+    return round(gpaSum / gpaCredits);
   }
 
   private void notifyGradeIfPublished(SelectionRecord before, SelectionRecord after) {

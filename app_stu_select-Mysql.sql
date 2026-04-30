@@ -1,5 +1,5 @@
 -- 项目唯一数据库脚本。
--- 团队协作时只维护这一份；不要再新增 schema.sql / data.sql。
+-- 团队协作时只维护这一份;不要再新增 schema.sql / data.sql。
 -- 推荐用法：
 -- 1. 在 MySQL 客户端中直接执行整份脚本；
 -- 2. 如果你没有建库权限，先手工创建数据库并切到 app_stu_select，再从建表语句开始执行。
@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS tb_student (
     age INT COMMENT '年龄',
     smajor VARCHAR(255) COMMENT '专业',
     sclass VARCHAR(255) COMMENT '班级',
+    grade INT COMMENT '年级：1=大一,2=大二,3=大三,4=大四',
+    enrollment_year INT COMMENT '入学年份',
     UNIQUE KEY uk_tb_student_username (username)
 ) COMMENT '学生表';
 
@@ -57,6 +59,8 @@ CREATE TABLE IF NOT EXISTS tb_course (
     dept VARCHAR(255) COMMENT '开课学院',
     max_students INT DEFAULT 0 COMMENT '选课容量上限，0表示不限制',
     time_slot VARCHAR(64) COMMENT '上课时间段，如"周一第1-2节"',
+    course_type VARCHAR(64) COMMENT '课程类型：专业必修/专业选修/通识必修/通识选修',
+    grade_limit INT COMMENT '年级限制：1=大一,2=大二,3=大三,4=大四,NULL=不限制',
     UNIQUE KEY uk_tb_course_numb (numb)
 ) COMMENT '课程表';
 
@@ -111,31 +115,62 @@ CREATE TABLE IF NOT EXISTS tb_selection_window (
     description VARCHAR(255) COMMENT '说明'
 ) COMMENT '选退课时间窗口表';
 
+-- ============ 新增：选课智能冲突检测相关表 ============
+
+CREATE TABLE IF NOT EXISTS tb_course_prerequisite (
+    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
+    course_id VARCHAR(32) NOT NULL COMMENT '课程ID',
+    prerequisite_course_id VARCHAR(32) NOT NULL COMMENT '先修课程ID',
+    min_score DOUBLE DEFAULT 60 COMMENT '先修课程最低分数要求，默认60分及格',
+    UNIQUE KEY uk_course_prerequisite (course_id, prerequisite_course_id),
+    KEY idx_course_id (course_id),
+    KEY idx_prerequisite_course_id (prerequisite_course_id)
+) COMMENT '课程先修关系表';
+
+CREATE TABLE IF NOT EXISTS tb_course_mutex (
+    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
+    course_id_a VARCHAR(32) NOT NULL COMMENT '课程A的ID',
+    course_id_b VARCHAR(32) NOT NULL COMMENT '课程B的ID',
+    reason VARCHAR(255) COMMENT '互斥原因说明',
+    UNIQUE KEY uk_course_mutex (course_id_a, course_id_b),
+    KEY idx_course_id_a (course_id_a),
+    KEY idx_course_id_b (course_id_b)
+) COMMENT '课程互斥关系表';
+
+CREATE TABLE IF NOT EXISTS tb_course_type_limit (
+    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
+    course_type VARCHAR(64) NOT NULL COMMENT '课程类型',
+    max_courses INT NOT NULL COMMENT '最多可选课程数量',
+    description VARCHAR(255) COMMENT '规则说明',
+    UNIQUE KEY uk_course_type (course_type)
+) COMMENT '课程类型限选规则表';
+
+CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
+    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
+    min_gpa DOUBLE NOT NULL COMMENT 'GPA下限（包含）',
+    max_gpa DOUBLE NOT NULL COMMENT 'GPA上限（不包含）',
+    max_credits DOUBLE NOT NULL COMMENT '允许选课的最大学分',
+    description VARCHAR(255) COMMENT '规则说明',
+    UNIQUE KEY uk_gpa_range (min_gpa, max_gpa)
+) COMMENT '学期学分上限配置表';
+
 -- 所有演示账号初始密码均为 123456，但数据库中保存的是 BCrypt 哈希值。
 SET @seed_password_hash = '$2a$10$8e3/3cz9z0kg7NGotuPXy.fRUEr32fHqXyN6JvE9YHE.kO8JsRx7q';
 
+-- 仅保留超级管理员账号，确保系统可以正常登录
 INSERT INTO tb_admin (id, username, password, name, tele) VALUES
-('A1001', 'admin', @seed_password_hash, '系统管理员', '13800000001'),
-('A1002', 'audit_admin', @seed_password_hash, '审计管理员', '13800000002')
+('A1001', 'admin', @seed_password_hash, '系统管理员', '13800000001')
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
 name = VALUES(name),
 tele = VALUES(tele);
 
+-- ============ 演示数据：教师 ============
 INSERT INTO tb_teacher (id, username, password, numb, tname, tbirthday, tposition, ttel, age, gender) VALUES
-('T2001', 't_zhang', @seed_password_hash, '2024001', '张若琳', '1987-09-12 00:00:00', '教授', '13810010001', 37, '女'),
+('T2001', 't_zhang', @seed_password_hash, '2024001', '张若琳', '1987-09-12 00:00:00', '教授', '13810010001', 36, '女'),
 ('T2002', 't_li', @seed_password_hash, '2024002', '李振华', '1985-03-21 00:00:00', '副教授', '13810010002', 39, '男'),
-('T2003', 't_sun', @seed_password_hash, '2024003', '孙启明', '1990-01-16 00:00:00', '讲师', '13810010003', 34, '男'),
-('T2004', 't_chen', @seed_password_hash, '2024004', '陈清越', '1988-07-08 00:00:00', '副教授', '13810010004', 36, '女'),
-('T2005', 't_wang', @seed_password_hash, '2024005', '王思哲', '1986-12-09 00:00:00', '教授', '13810010005', 38, '男'),
-('T2006', 't_zhao', @seed_password_hash, '2024006', '赵南星', '1992-05-11 00:00:00', '讲师', '13810010006', 32, '女'),
-('T2007', 't_he', @seed_password_hash, '2024007', '何嘉木', '1989-11-02 00:00:00', '实验中心主任', '13810010007', 35, '男'),
-('T2008', 't_xu', @seed_password_hash, '2024008', '许安宁', '1991-04-19 00:00:00', '讲师', '13810010008', 33, '女'),
-('T2009', 't_luo', @seed_password_hash, '2024009', '罗清衡', '1984-08-03 00:00:00', '副教授', '13810010009', 40, '男'),
-('T2010', 't_deng', @seed_password_hash, '2024010', '邓语禾', '1993-02-26 00:00:00', '讲师', '13810010010', 31, '女'),
-('T2011', 't_ma', @seed_password_hash, '2024011', '马汇宁', '1986-06-14 00:00:00', '教授', '13810010011', 38, '男'),
-('T2012', 't_guo', @seed_password_hash, '2024012', '郭临川', '1988-10-22 00:00:00', '副教授', '13810010012', 36, '男')
+('T2003', 't_sun', @seed_password_hash, '2024003', '孙启明', '1990-01-16 00:00:00', '讲师', '13810010003', 34, '男')
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
@@ -147,31 +182,11 @@ ttel = VALUES(ttel),
 age = VALUES(age),
 gender = VALUES(gender);
 
-INSERT INTO tb_student (id, username, password, numb, sname, sdept, sbirthday, tele, email, ssex, age, smajor, sclass) VALUES
-('S3001', 'stu_chen', @seed_password_hash, '2023001', '陈知远', '信息工程学院', '2004-03-11 00:00:00', '13920010001', 'stu_chen@example.com', '男', 20, '软件工程', '软工2301'),
-('S3002', 'stu_lin', @seed_password_hash, '2023002', '林晚晴', '信息工程学院', '2004-06-20 00:00:00', '13920010002', 'stu_lin@example.com', '女', 20, '网络工程', '网工2301'),
-('S3003', 'stu_qin', @seed_password_hash, '2023003', '秦语桐', '数据科学学院', '2003-12-09 00:00:00', '13920010003', 'stu_qin@example.com', '女', 21, '数据科学', '数科2301'),
-('S3004', 'stu_peng', @seed_password_hash, '2023004', '彭浩宇', '人工智能学院', '2004-01-18 00:00:00', '13920010004', 'stu_peng@example.com', '男', 20, '人工智能', '智科2302'),
-('S3005', 'stu_yao', @seed_password_hash, '2023005', '姚一鸣', '人工智能学院', '2004-09-04 00:00:00', '13920010005', 'stu_yao@example.com', '男', 20, '机器人工程', '机器人2301'),
-('S3006', 'stu_gu', @seed_password_hash, '2023006', '顾星澜', '商学院', '2003-11-23 00:00:00', '13920010006', 'stu_gu@example.com', '女', 21, '电子商务', '电商2301'),
-('S3007', 'stu_tan', @seed_password_hash, '2023007', '谭乐川', '信息工程学院', '2004-07-29 00:00:00', '13920010007', 'stu_tan@example.com', '男', 20, '软件工程', '软工2302'),
-('S3008', 'stu_xie', @seed_password_hash, '2023008', '谢听雨', '设计学院', '2004-08-15 00:00:00', '13920010008', 'stu_xie@example.com', '女', 20, '数字媒体', '数媒2301'),
-('S3009', 'stu_han', @seed_password_hash, '2023009', '韩景尧', '数据科学学院', '2004-04-28 00:00:00', '13920010009', 'stu_han@example.com', '男', 20, '大数据技术', '大数2301'),
-('S3010', 'stu_song', @seed_password_hash, '2023010', '宋知夏', '商学院', '2003-10-10 00:00:00', '13920010010', 'stu_song@example.com', '女', 21, '金融科技', '金科2301'),
-('S3011', 'stu_zhou', @seed_password_hash, '2023011', '周墨', '人工智能学院', '2004-02-14 00:00:00', '13920010011', 'stu_zhou@example.com', '男', 20, '人工智能', '智科2301'),
-('S3012', 'stu_fan', @seed_password_hash, '2023012', '范可欣', '设计学院', '2004-05-17 00:00:00', '13920010012', 'stu_fan@example.com', '女', 20, '交互设计', '交设2301'),
-('S3013', 'stu_cao', @seed_password_hash, '2023013', '曹予安', '信息工程学院', '2004-01-09 00:00:00', '13920010013', 'stu_cao@example.com', '男', 20, '网络工程', '网工2302'),
-('S3014', 'stu_shen', @seed_password_hash, '2023014', '沈沐言', '数据科学学院', '2004-03-26 00:00:00', '13920010014', 'stu_shen@example.com', '女', 20, '数据科学', '数科2302'),
-('S3015', 'stu_liu', @seed_password_hash, '2023015', '刘承泽', '人工智能学院', '2004-05-06 00:00:00', '13920010015', 'stu_liu@example.com', '男', 20, '智能科学', '智科2303'),
-('S3016', 'stu_yuan', @seed_password_hash, '2023016', '袁可宁', '设计学院', '2004-07-12 00:00:00', '13920010016', 'stu_yuan@example.com', '女', 20, '视觉传达', '视传2301'),
-('S3017', 'stu_wei', @seed_password_hash, '2023017', '魏清妍', '商学院', '2004-04-09 00:00:00', '13920010017', 'stu_wei@example.com', '女', 20, '市场营销', '营销2301'),
-('S3018', 'stu_du', @seed_password_hash, '2023018', '杜柏川', '人工智能学院', '2004-08-18 00:00:00', '13920010018', 'stu_du@example.com', '男', 20, '机器人工程', '机器人2302'),
-('S3019', 'stu_kong', @seed_password_hash, '2023019', '孔书瑶', '数据科学学院', '2004-09-28 00:00:00', '13920010019', 'stu_kong@example.com', '女', 20, '大数据技术', '大数2302'),
-('S3020', 'stu_mo', @seed_password_hash, '2023020', '莫嘉树', '信息工程学院', '2004-02-02 00:00:00', '13920010020', 'stu_mo@example.com', '男', 20, '软件工程', '软工2303'),
-('S3021', 'stu_pei', @seed_password_hash, '2023021', '裴星语', '设计学院', '2004-11-03 00:00:00', '13920010021', 'stu_pei@example.com', '女', 19, '数字媒体', '数媒2302'),
-('S3022', 'stu_huo', @seed_password_hash, '2023022', '霍闻川', '商学院', '2004-06-30 00:00:00', '13920010022', 'stu_huo@example.com', '男', 20, '金融科技', '金科2302'),
-('S3023', 'stu_lan', @seed_password_hash, '2023023', '蓝知意', '人工智能学院', '2004-12-21 00:00:00', '13920010023', 'stu_lan@example.com', '女', 19, '人工智能', '智科2304'),
-('S3024', 'stu_jiang', @seed_password_hash, '2023024', '江叙白', '信息工程学院', '2004-10-18 00:00:00', '13920010024', 'stu_jiang@example.com', '男', 19, '信息安全', '信安2301')
+-- ============ 演示数据：学生（包含年级信息） ============
+INSERT INTO tb_student (id, username, password, numb, sname, sdept, sbirthday, tele, email, ssex, age, smajor, sclass, grade, enrollment_year) VALUES
+('S3001', 'stu_chen', @seed_password_hash, '2023001', '陈知远', '信息工程学院', '2004-03-11 00:00:00', '13920010001', 'stu_chen@example.com', '男', 20, '软件工程', '软工2301', 2, 2023),
+('S3002', 'stu_lin', @seed_password_hash, '2023002', '林晚晴', '信息工程学院', '2004-06-20 00:00:00', '13920010002', 'stu_lin@example.com', '女', 20, '网络工程', '网工2301', 2, 2023),
+('S3003', 'stu_qin', @seed_password_hash, '2024001', '秦语桐', '数据科学学院', '2005-12-09 00:00:00', '13920010003', 'stu_qin@example.com', '女', 18, '数据科学', '数科2401', 1, 2024)
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
@@ -184,29 +199,24 @@ email = VALUES(email),
 ssex = VALUES(ssex),
 age = VALUES(age),
 smajor = VALUES(smajor),
-sclass = VALUES(sclass);
+sclass = VALUES(sclass),
+grade = VALUES(grade),
+enrollment_year = VALUES(enrollment_year);
 
-INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, time_slot) VALUES
-('C4001', 'Java Web开发', 3.5, 'K23001', 'T2001', '覆盖 Web 应用开发、接口设计、部署发布与项目协作。', '信息工程学院', 60, '周一第3-4节'),
-('C4002', '数据库原理', 3.0, 'K23002', 'T2002', '关注关系模型、SQL 优化、事务处理与索引设计。', '数据科学学院', 60, '周二第1-2节'),
-('C4003', '软件架构设计', 2.5, 'K23003', 'T2003', '围绕模块划分、系统分层与可维护性展开实践。', '信息工程学院', 40, '周一第1-2节'),
-('C4004', '前端交互设计', 2.0, 'K23004', 'T2004', '聚焦页面结构、交互流程、组件协作和体验表达。', '设计学院', 40, '周三第3-4节'),
-('C4005', '数据结构', 4.0, 'K23005', 'T2005', '强调线性表、树、图与算法复杂度分析。', '信息工程学院', 60, '周二第3-4节'),
-('C4006', '操作系统', 3.5, 'K23006', 'T2002', '包含进程线程、存储管理、文件系统与并发控制。', '信息工程学院', 60, '周三第1-2节'),
-('C4007', '人工智能导论', 2.5, 'K23007', 'T2006', '介绍搜索、推理、机器学习基础和典型应用场景。', '人工智能学院', 40, '周四第3-4节'),
-('C4008', '网络安全基础', 2.5, 'K23008', 'T2007', '围绕认证授权、常见漏洞、防护策略与安全规范。', '信息工程学院', 40, '周五第1-2节'),
-('C4009', '云原生应用开发', 2.5, 'K23009', 'T2001', '涵盖容器化部署、配置管理、日志监控和服务协作。', '信息工程学院', 40, '周四第1-2节'),
-('C4010', '数字产品策划', 2.0, 'K23010', 'T2008', '训练需求分析、竞品研究、方案表达与项目复盘。', '商学院', 50, '周五第3-4节'),
-('C4011', '创新创业实践', 1.5, 'K23011', '', '为跨学院项目预留课程，等待学院完成任课教师安排。', '创新创业学院', 30, '周三第5-6节'),
-('C4012', 'Python数据分析', 3.0, 'K23012', 'T2009', '围绕数据清洗、统计建模和分析报告展开项目训练。', '数据科学学院', 60, '周一第5-6节'),
-('C4013', '分布式系统', 3.0, 'K23013', 'T2001', '学习服务拆分、注册发现、一致性与弹性治理。', '信息工程学院', 50, '周四第5-6节'),
-('C4014', '机器学习基础', 3.5, 'K23014', 'T2010', '覆盖监督学习、模型评估、特征工程与实验复盘。', '人工智能学院', 50, '周三第7-8节'),
-('C4015', 'UI设计方法', 2.0, 'K23015', 'T2004', '通过案例拆解界面信息层级、交互逻辑与视觉规范。', '设计学院', 45, '周二第5-6节'),
-('C4016', '金融数据分析', 2.5, 'K23016', 'T2011', '结合业务指标、数据仪表板和风险判断进行分析实践。', '商学院', 50, '周一第7-8节'),
-('C4017', '计算机图形学', 3.0, 'K23017', 'T2008', '讲解图形渲染、坐标变换、动画基础与可视化表达。', '设计学院', 45, '周二第7-8节'),
-('C4018', '信息检索技术', 2.5, 'K23018', 'T2007', '介绍检索模型、索引结构、排序机制与搜索体验设计。', '信息工程学院', 45, '周五第5-6节'),
-('C4019', '微服务架构', 3.0, 'K23019', 'T2003', '聚焦服务拆分、接口治理、容错策略与可观测性建设。', '信息工程学院', 45, '周三第9-10节'),
-('C4020', '数据可视化', 2.5, 'K23020', 'T2012', '训练图表设计、视觉编码和数据叙事表达能力。', '数据科学学院', 45, '周四第7-8节')
+-- ============ 演示数据：课程（包含类型和年级限制） ============
+INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, time_slot, course_type, grade_limit) VALUES
+('C4001', 'Java基础', 3.0, 'K23001', 'T2001', 'Java语言基础入门课程', '信息工程学院', 60, '周一第1-2节', '专业必修', 1),
+('C4002', '数据结构', 4.0, 'K23002', 'T2002', '数据结构与算法基础', '信息工程学院', 60, '周二第3-4节', '专业必修', 1),
+('C4003', '数据库原理', 3.0, 'K23003', 'T2002', '关系数据库理论与SQL', '信息工程学院', 60, '周三第1-2节', '专业必修', 2),
+('C4004', 'Java Web开发', 3.5, 'K23004', 'T2001', 'Web应用开发实战', '信息工程学院', 50, '周四第3-4节', '专业必修', 2),
+('C4005', '软件架构设计', 2.5, 'K23005', 'T2003', '软件系统架构与设计模式', '信息工程学院', 40, '周五第1-2节', '专业选修', 3),
+('C4006', '分布式系统', 3.0, 'K23006', 'T2001', '分布式系统原理与实践', '信息工程学院', 40, '周一第5-6节', '专业选修', 3),
+('C4007', '微服务架构', 3.0, 'K23007', 'T2003', '微服务设计与实现', '信息工程学院', 35, '周二第5-6节', '专业选修', 4),
+('C4008', 'Python Web开发', 3.5, 'K23008', 'T2003', 'Python Web框架应用', '信息工程学院', 50, '周四第3-4节', '专业选修', 2),
+('C4009', '大学英语', 2.0, 'K23009', 'T2001', '通识英语课程', '外国语学院', 80, '周三第3-4节', '通识必修', NULL),
+('C4010', '艺术鉴赏', 1.5, 'K23010', 'T2002', '艺术与美学入门', '艺术学院', 100, '周五第5-6节', '通识选修', NULL),
+('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 60, '周三第7-8节', '通识选修', NULL),
+('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL)
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
 score = VALUES(score),
@@ -215,77 +225,60 @@ tid = VALUES(tid),
 jianjie = VALUES(jianjie),
 dept = VALUES(dept),
 max_students = VALUES(max_students),
-time_slot = VALUES(time_slot);
+time_slot = VALUES(time_slot),
+course_type = VALUES(course_type),
+grade_limit = VALUES(grade_limit);
 
+-- ============ 演示数据：先修课程关系 ============
+INSERT INTO tb_course_prerequisite (id, course_id, prerequisite_course_id, min_score) VALUES
+('P1001', 'C4003', 'C4002', 60),  -- 数据库原理 需要先修 数据结构
+('P1002', 'C4004', 'C4001', 60),  -- Java Web开发 需要先修 Java基础
+('P1003', 'C4005', 'C4004', 70),  -- 软件架构设计 需要先修 Java Web开发(70分以上)
+('P1004', 'C4006', 'C4003', 60),  -- 分布式系统 需要先修 数据库原理
+('P1005', 'C4007', 'C4006', 65)   -- 微服务架构 需要先修 分布式系统(65分以上)
+ON DUPLICATE KEY UPDATE
+course_id = VALUES(course_id),
+prerequisite_course_id = VALUES(prerequisite_course_id),
+min_score = VALUES(min_score);
+
+-- ============ 演示数据：互斥课程关系 ============
+INSERT INTO tb_course_mutex (id, course_id_a, course_id_b, reason) VALUES
+('M2001', 'C4004', 'C4008', 'Java Web开发 与 Python Web开发 为同类型课程，只能选其一'),
+('M2002', 'C4008', 'C4004', 'Python Web开发 与 Java Web开发 为同类型课程，只能选其一')
+ON DUPLICATE KEY UPDATE
+course_id_a = VALUES(course_id_a),
+course_id_b = VALUES(course_id_b),
+reason = VALUES(reason);
+
+-- ============ 演示数据：课程类型限选规则 ============
+INSERT INTO tb_course_type_limit (id, course_type, max_courses, description) VALUES
+('L3001', '通识选修', 3, '每学期最多选3门通识选修课'),
+('L3002', '专业选修', 5, '每学期最多选5门专业选修课')
+ON DUPLICATE KEY UPDATE
+course_type = VALUES(course_type),
+max_courses = VALUES(max_courses),
+description = VALUES(description);
+
+-- ============ 演示数据：学期学分上限配置 ============
+INSERT INTO tb_semester_credit_limit (id, min_gpa, max_gpa, max_credits, description) VALUES
+('CL4001', 0.0, 2.0, 15.0, 'GPA低于2.0，学业预警，限制选课学分'),
+('CL4002', 2.0, 3.0, 20.0, 'GPA 2.0-3.0，正常学分上限'),
+('CL4003', 3.0, 3.5, 25.0, 'GPA 3.0-3.5，优秀学生可多选学分'),
+('CL4004', 3.5, 5.0, 30.0, 'GPA 3.5以上，学霸特权，最高学分上限')
+ON DUPLICATE KEY UPDATE
+min_gpa = VALUES(min_gpa),
+max_gpa = VALUES(max_gpa),
+max_credits = VALUES(max_credits),
+description = VALUES(description);
+
+-- ============ 演示数据：选课记录（符合业务逻辑的完整数据） ============
+
+-- 【学生1：陈知远 (S3001, 大二)】
+-- 上学期（大一下）已修课程：Java基础、数据结构、大学英语（已录入成绩）
 INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
-('R5001', 'C4001', 'S3001', 'T2001', 92, 1, '2026-03-01 09:00:00'),
-('R5002', 'C4002', 'S3001', 'T2002', 88, 1, '2026-03-01 10:30:00'),
-('R5003', 'C4003', 'S3001', 'T2003', NULL, 0, '2026-03-02 08:40:00'),
-('R5004', 'C4004', 'S3002', 'T2004', 91, 1, '2026-03-02 09:20:00'),
-('R5005', 'C4005', 'S3002', 'T2005', 86, 1, '2026-03-03 08:15:00'),
-('R5006', 'C4007', 'S3003', 'T2006', 95, 1, '2026-03-03 09:25:00'),
-('R5007', 'C4002', 'S3003', 'T2002', 90, 1, '2026-03-03 10:35:00'),
-('R5008', 'C4008', 'S3004', 'T2007', 89, 1, '2026-03-04 11:10:00'),
-('R5009', 'C4007', 'S3004', 'T2006', 93, 1, '2026-03-04 14:05:00'),
-('R5010', 'C4007', 'S3005', 'T2006', 87, 1, '2026-03-05 08:45:00'),
-('R5011', 'C4010', 'S3006', 'T2008', 90, 1, '2026-03-05 09:40:00'),
-('R5012', 'C4009', 'S3007', 'T2001', 88, 1, '2026-03-05 10:50:00'),
-('R5013', 'C4001', 'S3007', 'T2001', 90, 1, '2026-03-06 08:20:00'),
-('R5014', 'C4006', 'S3010', 'T2002', 84, 1, '2026-03-06 10:00:00'),
-('R5015', 'C4003', 'S3009', 'T2003', 93, 1, '2026-03-06 11:15:00'),
-('R5016', 'C4004', 'S3012', 'T2004', NULL, 0, '2026-03-07 08:55:00'),
-('R5017', 'C4010', 'S3012', 'T2008', 95, 1, '2026-03-07 09:50:00'),
-('R5018', 'C4008', 'S3011', 'T2007', 87, 1, '2026-03-07 10:40:00'),
-('R5019', 'C4005', 'S3008', 'T2005', 92, 1, '2026-03-08 08:30:00'),
-('R5020', 'C4009', 'S3006', 'T2001', NULL, 0, '2026-03-08 09:35:00'),
-('R5021', 'C4006', 'S3002', 'T2002', 85, 1, '2026-03-08 10:40:00'),
-('R5022', 'C4002', 'S3011', 'T2002', 89, 1, '2026-03-08 11:30:00'),
-('R5023', 'C4013', 'S3001', 'T2001', 94, 1, '2026-03-09 08:20:00'),
-('R5024', 'C4012', 'S3002', 'T2009', NULL, 0, '2026-03-09 09:10:00'),
-('R5025', 'C4015', 'S3002', 'T2004', 93, 1, '2026-03-09 10:00:00'),
-('R5026', 'C4012', 'S3003', 'T2009', 91, 1, '2026-03-09 11:00:00'),
-('R5027', 'C4020', 'S3003', 'T2012', 94, 1, '2026-03-09 14:15:00'),
-('R5028', 'C4014', 'S3004', 'T2010', NULL, 0, '2026-03-10 08:35:00'),
-('R5029', 'C4018', 'S3004', 'T2007', 88, 1, '2026-03-10 09:25:00'),
-('R5030', 'C4016', 'S3005', 'T2011', 90, 1, '2026-03-10 10:20:00'),
-('R5031', 'C4009', 'S3005', 'T2001', NULL, 0, '2026-03-10 11:05:00'),
-('R5032', 'C4016', 'S3006', 'T2011', 92, 1, '2026-03-10 13:10:00'),
-('R5033', 'C4019', 'S3007', 'T2003', 89, 1, '2026-03-10 14:00:00'),
-('R5034', 'C4008', 'S3007', 'T2007', 91, 1, '2026-03-10 15:00:00'),
-('R5035', 'C4017', 'S3008', 'T2008', 94, 1, '2026-03-11 08:40:00'),
-('R5036', 'C4004', 'S3008', 'T2004', 90, 1, '2026-03-11 09:35:00'),
-('R5037', 'C4012', 'S3009', 'T2009', 90, 1, '2026-03-11 10:30:00'),
-('R5038', 'C4020', 'S3009', 'T2012', NULL, 0, '2026-03-11 11:20:00'),
-('R5039', 'C4016', 'S3010', 'T2011', 88, 1, '2026-03-11 14:00:00'),
-('R5040', 'C4018', 'S3010', 'T2007', 92, 1, '2026-03-11 14:50:00'),
-('R5041', 'C4014', 'S3011', 'T2010', 93, 1, '2026-03-12 08:25:00'),
-('R5042', 'C4013', 'S3011', 'T2001', 91, 1, '2026-03-12 09:15:00'),
-('R5043', 'C4015', 'S3012', 'T2004', 94, 1, '2026-03-12 10:05:00'),
-('R5044', 'C4020', 'S3012', 'T2012', NULL, 0, '2026-03-12 10:55:00'),
-('R5045', 'C4013', 'S3013', 'T2001', 87, 1, '2026-03-12 13:10:00'),
-('R5046', 'C4018', 'S3013', 'T2007', 85, 1, '2026-03-12 14:05:00'),
-('R5047', 'C4012', 'S3014', 'T2009', 95, 1, '2026-03-12 15:00:00'),
-('R5048', 'C4020', 'S3014', 'T2012', 93, 1, '2026-03-12 15:55:00'),
-('R5049', 'C4014', 'S3015', 'T2010', 89, 1, '2026-03-13 08:20:00'),
-('R5050', 'C4007', 'S3015', 'T2006', 92, 1, '2026-03-13 09:15:00'),
-('R5051', 'C4015', 'S3016', 'T2004', 96, 1, '2026-03-13 10:05:00'),
-('R5052', 'C4017', 'S3016', 'T2008', 90, 1, '2026-03-13 10:55:00'),
-('R5053', 'C4016', 'S3017', 'T2011', 91, 1, '2026-03-13 13:20:00'),
-('R5054', 'C4010', 'S3017', 'T2008', 89, 1, '2026-03-13 14:10:00'),
-('R5055', 'C4014', 'S3018', 'T2010', NULL, 0, '2026-03-13 15:05:00'),
-('R5056', 'C4007', 'S3018', 'T2006', 90, 1, '2026-03-13 15:55:00'),
-('R5057', 'C4012', 'S3019', 'T2009', 88, 1, '2026-03-14 08:35:00'),
-('R5058', 'C4002', 'S3019', 'T2002', 90, 1, '2026-03-14 09:25:00'),
-('R5059', 'C4019', 'S3020', 'T2003', 92, 1, '2026-03-14 10:15:00'),
-('R5060', 'C4005', 'S3020', 'T2005', 94, 1, '2026-03-14 11:05:00'),
-('R5061', 'C4017', 'S3021', 'T2008', 95, 1, '2026-03-14 13:30:00'),
-('R5062', 'C4004', 'S3021', 'T2004', 93, 1, '2026-03-14 14:20:00'),
-('R5063', 'C4016', 'S3022', 'T2011', 87, 1, '2026-03-14 15:10:00'),
-('R5064', 'C4010', 'S3022', 'T2008', NULL, 0, '2026-03-14 16:00:00'),
-('R5065', 'C4014', 'S3023', 'T2010', 94, 1, '2026-03-15 08:25:00'),
-('R5066', 'C4007', 'S3023', 'T2006', 96, 1, '2026-03-15 09:15:00'),
-('R5067', 'C4013', 'S3024', 'T2001', 90, 1, '2026-03-15 10:05:00'),
-('R5068', 'C4008', 'S3024', 'T2007', 92, 1, '2026-03-15 10:55:00')
+('R5001', 'C4001', 'S3001', 'T2001', 85, 1, '2024-03-01 09:00:00'),  -- Java基础 85分（已录入成绩）
+('R5002', 'C4002', 'S3001', 'T2002', 90, 1, '2024-03-01 10:00:00'),  -- 数据结构 90分（已录入成绩）
+('R5003', 'C4009', 'S3001', 'T2001', 78, 1, '2024-03-01 11:00:00')   -- 大学英语 78分（已录入成绩）
 ON DUPLICATE KEY UPDATE
 courseid = VALUES(courseid),
 studentId = VALUES(studentId),
@@ -294,11 +287,64 @@ score = VALUES(score),
 graded = VALUES(graded),
 createtime = VALUES(createtime);
 
+-- 本学期（大二上）正在上的课程：数据库原理、Java Web开发、艺术鉴赏（未录入成绩）
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('R5004', 'C4003', 'S3001', 'T2002', NULL, 0, '2024-09-01 09:00:00'),  -- 数据库原理（本学期选课，未录入成绩）
+('R5005', 'C4004', 'S3001', 'T2001', NULL, 0, '2024-09-01 10:00:00'),  -- Java Web开发（本学期选课，未录入成绩）
+('R5006', 'C4010', 'S3001', 'T2002', NULL, 0, '2024-09-01 11:00:00')   -- 艺术鉴赏（本学期选课，未录入成绩）
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- 【学生2：林晚晴 (S3002, 大二)】
+-- 上学期（大一下）已修课程：Java基础、数据结构（已录入成绩）
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('R5007', 'C4001', 'S3002', 'T2001', 75, 1, '2024-03-01 09:00:00'),  -- Java基础 75分（已录入成绩）
+('R5008', 'C4002', 'S3002', 'T2002', 65, 1, '2024-03-01 10:00:00'),  -- 数据结构 65分（已录入成绩，刚及格）
+('R5009', 'C4009', 'S3002', 'T2001', 82, 1, '2024-03-01 11:00:00')   -- 大学英语 82分（已录入成绩）
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- 本学期（大二上）正在上的课程：数据库原理、Python Web开发（未录入成绩）
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('R5010', 'C4003', 'S3002', 'T2002', NULL, 0, '2024-09-01 09:00:00'),  -- 数据库原理（本学期选课，未录入成绩）
+('R5011', 'C4008', 'S3002', 'T2003', NULL, 0, '2024-09-01 10:00:00'),  -- Python Web开发（本学期选课，未录入成绩）
+('R5012', 'C4011', 'S3002', 'T2003', NULL, 0, '2024-09-01 11:00:00')   -- 创新创业（本学期选课，未录入成绩）
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- 【学生3：秦语桐 (S3003, 大一)】
+-- 本学期（大一上）正在上的课程：Java基础、大学英语（未录入成绩）
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('R5013', 'C4001', 'S3003', 'T2001', NULL, 0, '2024-09-01 09:00:00'),  -- Java基础（本学期选课，未录入成绩）
+('R5014', 'C4009', 'S3003', 'T2001', NULL, 0, '2024-09-01 10:00:00'),  -- 大学英语（本学期选课，未录入成绩）
+('R5015', 'C4012', 'S3003', 'T2001', NULL, 0, '2024-09-01 11:00:00')   -- 音乐欣赏（本学期选课，未录入成绩）
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- ============ 演示数据：选课时间窗口（长期开放，便于本地测试） ============
 INSERT INTO tb_selection_window (id, action_type, name, start_time, end_time, enabled, description) VALUES
-('W7001', 'SELECT', '2026春季学期选课窗口', '2026-02-20 08:00:00', '2026-05-31 23:59:59', 1, '学生在窗口期内可发起选课'),
-('W7002', 'DROP', '2026春季学期退课窗口', '2026-02-20 08:00:00', '2026-05-31 23:59:59', 1, '学生在窗口期内可办理退课'),
-('W7003', 'SELECT', '2025秋季学期选课窗口', '2025-08-20 08:00:00', '2025-09-10 23:59:59', 1, '历史学期窗口，用于演示窗口列表'),
-('W7004', 'DROP', '2025秋季学期退课窗口', '2025-08-20 08:00:00', '2025-10-01 23:59:59', 0, '历史窗口已停用，用于演示启停状态')
+('W6001', 'SELECT', '演示选课窗口', '2024-01-01 00:00:00', '2030-12-31 23:59:59', 1, '长期开放，便于本地功能测试'),
+('W6002', 'DROP', '演示退课窗口', '2024-01-01 00:00:00', '2030-12-31 23:59:59', 1, '长期开放，便于本地功能测试')
 ON DUPLICATE KEY UPDATE
 action_type = VALUES(action_type),
 name = VALUES(name),
@@ -306,50 +352,3 @@ start_time = VALUES(start_time),
 end_time = VALUES(end_time),
 enabled = VALUES(enabled),
 description = VALUES(description);
-
-INSERT INTO tb_notification (
-id, recipient_id, recipient_role, recipient_name, channel, status, title, content, contact, result_message, createtime, senttime
-) VALUES
-('N8001', 'S3001', 'student', '陈知远', 'SYSTEM', 'SENT', '成绩发布通知', '《Java Web开发》成绩已发布，当前成绩为 92 分。', '', '站内通知已生成', '2026-03-10 09:00:00', '2026-03-10 09:00:00'),
-('N8002', 'S3001', 'student', '陈知远', 'SYSTEM', 'SENT', '成绩发布通知', '《Java Web开发》成绩已发布，当前成绩为 92 分。', '', '站内通知已生成', '2026-03-10 09:00:01', '2026-03-10 09:00:01'),
-('N8003', 'S3002', 'student', '林晚晴', 'SYSTEM', 'SENT', '选课成功通知', '你已成功选上《数据结构》，上课时间：周二第3-4节。', '', '站内通知已生成', '2026-03-03 08:16:00', '2026-03-03 08:16:00'),
-('N8004', 'S3002', 'student', '林晚晴', 'SYSTEM', 'SENT', '选课成功通知', '你已成功选上《数据结构》，上课时间：周二第3-4节。', '', '站内通知已生成', '2026-03-03 08:16:01', '2026-03-03 08:16:01'),
-('N8005', 'S3003', 'student', '秦语桐', 'SYSTEM', 'SENT', '成绩发布通知', '《Python数据分析》成绩已发布，当前成绩为 91 分。', '', '站内通知已生成', '2026-03-12 09:30:00', '2026-03-12 09:30:00'),
-('N8006', 'S3004', 'student', '彭浩宇', 'SYSTEM', 'SENT', '待录成绩提醒', '《机器学习基础》成绩尚未录入，请关注后续更新。', '', '站内通知已生成', '2026-03-12 10:30:00', '2026-03-12 10:30:00'),
-('N8007', 'S3014', 'student', '沈沐言', 'SYSTEM', 'SENT', '成绩发布通知', '《数据可视化》成绩已发布，当前成绩为 93 分。', '', '站内通知已生成', '2026-03-13 15:10:00', '2026-03-13 15:10:00'),
-('N8008', 'S3023', 'student', '蓝知意', 'SYSTEM', 'SENT', '成绩发布通知', '《人工智能导论》成绩已发布，当前成绩为 96 分。', '', '站内通知已生成', '2026-03-15 11:20:00', '2026-03-15 11:20:00'),
-('N8009', 'T2001', 'teacher', '张若琳', 'SYSTEM', 'SENT', '成绩录入提醒', '你负责的课程仍有待录成绩记录，请及时处理。', '', '站内通知已生成', '2026-03-15 12:00:00', '2026-03-15 12:00:00'),
-('N8010', 'A1001', 'admin', '系统管理员', 'SYSTEM', 'SENT', '窗口状态提醒', '2026 春季学期选课窗口正在开放中，请关注容量与冲突情况。', '', '站内通知已生成', '2026-03-15 12:10:00', '2026-03-15 12:10:00')
-ON DUPLICATE KEY UPDATE
-recipient_id = VALUES(recipient_id),
-recipient_role = VALUES(recipient_role),
-recipient_name = VALUES(recipient_name),
-channel = VALUES(channel),
-status = VALUES(status),
-title = VALUES(title),
-content = VALUES(content),
-contact = VALUES(contact),
-result_message = VALUES(result_message),
-createtime = VALUES(createtime),
-senttime = VALUES(senttime);
-
-INSERT INTO tb_admin_audit_log (
-id, admin_id, admin_username, action, target_type, target_id, target_name, detail, createtime
-) VALUES
-('L9001', 'A1001', 'admin', '新增', 'teacher', 'T2009', '罗清衡', '新增教师档案并补充教工号与联系方式。', '2026-02-22 09:10:00'),
-('L9002', 'A1001', 'admin', '新增', 'course', 'C4012', 'Python数据分析', '新增数据科学学院课程并配置授课教师与时间段。', '2026-02-22 09:25:00'),
-('L9003', 'A1002', 'audit_admin', '编辑', 'selectionWindow', 'W7001', '2026春季学期选课窗口', '调整选课窗口说明，明确学生可在窗口期内发起选课。', '2026-02-23 10:00:00'),
-('L9004', 'A1001', 'admin', '新增', 'student', 'S3014', '沈沐言', '新增学生档案并维护学院、专业与班级信息。', '2026-02-24 11:20:00'),
-('L9005', 'A1002', 'audit_admin', '编辑', 'course', 'C4019', '微服务架构', '更新课程简介与容量上限，补充可观测性建设说明。', '2026-02-25 14:40:00'),
-('L9006', 'A1001', 'admin', '编辑', 'teacher', 'T2010', '邓语禾', '更新教师职位信息并同步联系电话。', '2026-02-26 15:15:00'),
-('L9007', 'A1001', 'admin', '新增', 'course', 'C4020', '数据可视化', '新增跨学院课程，用于扩展学生成绩查询样本。', '2026-02-27 09:45:00'),
-('L9008', 'A1002', 'audit_admin', '删除', 'selectionWindow', 'W7004', '2025秋季学期退课窗口', '停用历史退课窗口，保留记录用于审计追踪。', '2026-02-28 16:30:00')
-ON DUPLICATE KEY UPDATE
-admin_id = VALUES(admin_id),
-admin_username = VALUES(admin_username),
-action = VALUES(action),
-target_type = VALUES(target_type),
-target_id = VALUES(target_id),
-target_name = VALUES(target_name),
-detail = VALUES(detail),
-createtime = VALUES(createtime);

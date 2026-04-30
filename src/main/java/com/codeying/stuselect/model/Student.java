@@ -43,6 +43,8 @@ public class Student {
   private String smajor;
   @Size(max = 255, message = "班级长度不能超过255位")
   private String sclass;
+  private Integer grade;
+  private Integer enrollmentYear;
 
   public String getId() {
     return id;
@@ -146,5 +148,21 @@ public class Student {
 
   public void setSclass(String sclass) {
     this.sclass = sclass;
+  }
+
+  public Integer getGrade() {
+    return grade;
+  }
+
+  public void setGrade(Integer grade) {
+    this.grade = grade;
+  }
+
+  public Integer getEnrollmentYear() {
+    return enrollmentYear;
+  }
+
+  public void setEnrollmentYear(Integer enrollmentYear) {
+    this.enrollmentYear = enrollmentYear;
   }
 }

@@ -33,6 +33,9 @@ public class Course {
   private Integer maxStudents = 0;
   @Size(max = 64, message = "上课时间段长度不能超过64位")
   private String timeSlot;
+  @Size(max = 64, message = "课程类型长度不能超过64位")
+  private String courseType;
+  private Integer gradeLimit;
 
   public String getId() {
     return id;
@@ -112,5 +115,21 @@ public class Course {
 
   public void setTimeSlot(String timeSlot) {
     this.timeSlot = timeSlot;
+  }
+
+  public String getCourseType() {
+    return courseType;
+  }
+
+  public void setCourseType(String courseType) {
+    this.courseType = courseType;
+  }
+
+  public Integer getGradeLimit() {
+    return gradeLimit;
+  }
+
+  public void setGradeLimit(Integer gradeLimit) {
+    this.gradeLimit = gradeLimit;
   }
 }
