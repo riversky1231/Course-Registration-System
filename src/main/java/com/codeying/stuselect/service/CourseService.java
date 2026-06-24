@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -126,6 +127,7 @@ public class CourseService {
    * @param session current HTTP session
    * @return created course with teacher information
    */
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Course create(final Course course, final HttpSession session) {
     final UserSession current =
         sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);
@@ -169,6 +171,7 @@ public class CourseService {
    * @return updated course with teacher information
    */
   @Transactional
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Course update(
       final String id,
       final Course input,
@@ -231,6 +234,7 @@ public class CourseService {
    * @param session current HTTP session
    */
   @Transactional
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(final String id, final HttpSession session) {
     final UserSession current =
         sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);

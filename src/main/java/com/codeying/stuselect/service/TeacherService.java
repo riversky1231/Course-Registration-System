@@ -12,6 +12,7 @@ import com.codeying.stuselect.mapper.TeacherMapper;
 import com.codeying.stuselect.model.Teacher;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -68,6 +69,7 @@ public class TeacherService {
     return teacherMapper.selectList(new LambdaQueryWrapper<Teacher>().orderByDesc(Teacher::getId));
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Teacher create(Teacher teacher, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(teacher.getPassword());
@@ -80,6 +82,7 @@ public class TeacherService {
     return teacherMapper.selectById(teacher.getId());
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Teacher update(String id, Teacher teacher, HttpSession session) {
     UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     Teacher target = require(id);
@@ -98,6 +101,7 @@ public class TeacherService {
     return teacherMapper.selectById(id);
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(String id, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
     Teacher target = require(id);

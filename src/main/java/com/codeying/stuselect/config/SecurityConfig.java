@@ -43,7 +43,7 @@ public class SecurityConfig {
         // 安全响应头
         .headers(headers -> headers
             .contentSecurityPolicy(csp -> csp
-                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'")
+                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:")
             )
             .xssProtection(xss -> xss.headerValue(
                 org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK

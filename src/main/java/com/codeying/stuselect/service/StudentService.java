@@ -13,6 +13,7 @@ import com.codeying.stuselect.model.Student;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -119,6 +120,7 @@ public class StudentService {
    * @param session current HTTP session
    * @return created student
    */
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Student create(final Student student, final HttpSession session) {
     final UserSession current = sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(student.getPassword());
@@ -144,6 +146,7 @@ public class StudentService {
    * @param session current HTTP session
    * @return updated student
    */
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Student update(
       final String id,
       final Student student,
@@ -175,6 +178,7 @@ public class StudentService {
    * @param id student id
    * @param session current HTTP session
    */
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(final String id, final HttpSession session) {
     final UserSession current = sessionService.requireRole(session, Role.ADMIN);
     final Student target = require(id);

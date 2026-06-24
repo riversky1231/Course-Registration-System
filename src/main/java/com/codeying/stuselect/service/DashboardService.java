@@ -10,6 +10,7 @@ import com.codeying.stuselect.model.SelectionRecord;
 import com.codeying.stuselect.model.Student;
 import com.codeying.stuselect.model.Teacher;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -54,6 +55,7 @@ public class DashboardService {
     this.selectionWindowService = selectionWindowService;
   }
 
+  @Cacheable(cacheNames = "dashboardSummary", keyGenerator = "userSessionKeyGenerator")
   public Map<String, Object> summary(HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     Map<String, Object> result = new LinkedHashMap<>();
@@ -71,6 +73,7 @@ public class DashboardService {
     return result;
   }
 
+  @Cacheable(cacheNames = "dashboardInsights", keyGenerator = "userSessionKeyGenerator")
   public DashboardInsights insights(HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     List<Admin> admins =

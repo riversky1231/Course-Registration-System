@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -136,6 +137,7 @@ public class SelectionService {
    * @return created selection record
    */
   @Transactional
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public SelectionRecord create(
       final SelectionRecord record,
       final HttpSession session) {
@@ -177,6 +179,7 @@ public class SelectionService {
    * @return updated selection record
    */
   @Transactional
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public SelectionRecord update(
       final String id,
       final SelectionRecord record,
@@ -223,6 +226,7 @@ public class SelectionService {
    * @param session current HTTP session
    */
   @Transactional
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(final String id, final HttpSession session) {
     UserSession current =
         sessionService.requireRole(session, Role.ADMIN, Role.STUDENT);

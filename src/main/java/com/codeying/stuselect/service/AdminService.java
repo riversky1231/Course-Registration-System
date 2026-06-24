@@ -12,6 +12,7 @@ import com.codeying.stuselect.mapper.AdminMapper;
 import com.codeying.stuselect.model.Admin;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -57,6 +58,7 @@ public class AdminService {
     return adminMapper.selectList(new LambdaQueryWrapper<Admin>().orderByAsc(Admin::getUsername));
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Admin create(Admin admin, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(admin.getPassword());
@@ -69,6 +71,7 @@ public class AdminService {
     return adminMapper.selectById(admin.getId());
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Admin update(String id, Admin admin, HttpSession session) {
     UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     Admin target = require(id);
@@ -109,6 +112,7 @@ public class AdminService {
     return adminMapper.selectById(target.getId());
   }
 
+  @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(String id, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
     Admin target = require(id);
