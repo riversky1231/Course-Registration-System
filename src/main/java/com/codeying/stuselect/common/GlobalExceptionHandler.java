@@ -1,6 +1,8 @@
 package com.codeying.stuselect.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   @ExceptionHandler(AppException.class)
   public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
@@ -34,7 +38,11 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Void>> handleOther(Exception ex) {
+    // 记录完整的错误信息到服务器日志
+    logger.error("Unexpected error occurred", ex);
+
+    // 返回通用错误消息给客户端，不泄露内部细节
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(ApiResponse.fail("服务器异常：" + ex.getMessage()));
+        .body(ApiResponse.fail("服务器内部错误，请联系管理员"));
   }
 }

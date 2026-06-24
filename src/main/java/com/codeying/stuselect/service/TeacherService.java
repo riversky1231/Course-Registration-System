@@ -2,6 +2,7 @@ package com.codeying.stuselect.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codeying.stuselect.common.AppException;
+import com.codeying.stuselect.common.CredentialRules;
 import com.codeying.stuselect.common.IdGenerator;
 import com.codeying.stuselect.common.PageQuery;
 import com.codeying.stuselect.common.PageResult;
@@ -69,9 +70,7 @@ public class TeacherService {
 
   public Teacher create(Teacher teacher, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    if (!StringUtils.hasText(teacher.getUsername()) || !StringUtils.hasText(teacher.getPassword())) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "用户名和密码不能为空");
-    }
+    CredentialRules.requirePassword(teacher.getPassword());
     ensureUsernameAvailable(teacher.getUsername(), null);
     teacher.setId(IdGenerator.newId());
     teacher.setPassword(passwordService.encode(teacher.getPassword()));
@@ -84,7 +83,9 @@ public class TeacherService {
   public Teacher update(String id, Teacher teacher, HttpSession session) {
     UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     Teacher target = require(id);
-    ensureUsernameAvailable(defaultValue(teacher.getUsername(), target.getUsername()), target.getId());
+    String nextUsername = defaultValue(teacher.getUsername(), target.getUsername());
+    CredentialRules.requirePasswordIfProvided(teacher.getPassword());
+    ensureUsernameAvailable(nextUsername, target.getId());
     mergeTeacher(target, teacher);
     teacherMapper.updateById(target);
     adminAuditLogService.record(
@@ -113,7 +114,9 @@ public class TeacherService {
   public Teacher updateProfile(Teacher input, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.TEACHER);
     Teacher teacher = require(current.getId());
-    ensureUsernameAvailable(defaultValue(input.getUsername(), teacher.getUsername()), teacher.getId());
+    String nextUsername = defaultValue(input.getUsername(), teacher.getUsername());
+    CredentialRules.requirePasswordIfProvided(input.getPassword());
+    ensureUsernameAvailable(nextUsername, teacher.getId());
     mergeTeacher(teacher, input);
     teacherMapper.updateById(teacher);
     return teacherMapper.selectById(teacher.getId());
@@ -156,9 +159,7 @@ public class TeacherService {
   }
 
   private void ensureUsernameAvailable(String username, String currentId) {
-    if (!StringUtils.hasText(username)) {
-      return;
-    }
+    CredentialRules.requireUsername(username);
     Teacher existed = findByUsername(username);
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "教师账号已存在");

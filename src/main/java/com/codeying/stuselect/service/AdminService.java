@@ -2,6 +2,7 @@ package com.codeying.stuselect.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codeying.stuselect.common.AppException;
+import com.codeying.stuselect.common.CredentialRules;
 import com.codeying.stuselect.common.IdGenerator;
 import com.codeying.stuselect.common.PageQuery;
 import com.codeying.stuselect.common.PageResult;
@@ -58,9 +59,7 @@ public class AdminService {
 
   public Admin create(Admin admin, HttpSession session) {
     UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    if (!StringUtils.hasText(admin.getUsername()) || !StringUtils.hasText(admin.getPassword())) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "用户名和密码不能为空");
-    }
+    CredentialRules.requirePassword(admin.getPassword());
     ensureUsernameAvailable(admin.getUsername(), null);
     admin.setId(IdGenerator.newId());
     admin.setPassword(passwordService.encode(admin.getPassword()));
@@ -74,6 +73,7 @@ public class AdminService {
     UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     Admin target = require(id);
     String nextUsername = defaultValue(admin.getUsername(), target.getUsername());
+    CredentialRules.requirePasswordIfProvided(admin.getPassword());
     ensureUsernameAvailable(nextUsername, target.getId());
     target.setUsername(nextUsername);
     target.setPassword(passwordService.encodeIfProvided(admin.getPassword(), target.getPassword()));
@@ -99,6 +99,7 @@ public class AdminService {
     UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     Admin target = require(actor.getId());
     String nextUsername = defaultValue(input.getUsername(), target.getUsername());
+    CredentialRules.requirePasswordIfProvided(input.getPassword());
     ensureUsernameAvailable(nextUsername, target.getId());
     target.setUsername(nextUsername);
     target.setPassword(passwordService.encodeIfProvided(input.getPassword(), target.getPassword()));
@@ -139,9 +140,7 @@ public class AdminService {
   }
 
   private void ensureUsernameAvailable(String username, String currentId) {
-    if (!StringUtils.hasText(username)) {
-      return;
-    }
+    CredentialRules.requireUsername(username);
     Admin existed = findByUsername(username);
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "管理员账号已存在");

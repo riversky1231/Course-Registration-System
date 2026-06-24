@@ -2,9 +2,17 @@
 -- 团队协作时只维护这一份;不要再新增 schema.sql / data.sql。
 -- 推荐用法：
 -- 1. 在 MySQL 客户端中直接执行整份脚本；
--- 2. 如果你没有建库权限，先手工创建数据库并切到 app_stu_select，再从建表语句开始执行。
+-- 2. 脚本会创建项目默认连接账号 app_stu_select/app_stu_select；
+-- 3. 如果你没有建库或建用户权限，先手工创建数据库和账号，再从建表语句开始执行。
 
 CREATE DATABASE IF NOT EXISTS app_stu_select CHARACTER SET utf8mb4;
+
+CREATE USER IF NOT EXISTS 'app_stu_select'@'localhost' IDENTIFIED BY 'app_stu_select';
+CREATE USER IF NOT EXISTS 'app_stu_select'@'127.0.0.1' IDENTIFIED BY 'app_stu_select';
+GRANT ALL PRIVILEGES ON app_stu_select.* TO 'app_stu_select'@'localhost';
+GRANT ALL PRIVILEGES ON app_stu_select.* TO 'app_stu_select'@'127.0.0.1';
+FLUSH PRIVILEGES;
+
 USE app_stu_select;
 
 CREATE TABLE IF NOT EXISTS tb_admin (
@@ -216,7 +224,9 @@ INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, 
 ('C4009', '大学英语', 2.0, 'K23009', 'T2001', '通识英语课程', '外国语学院', 80, '周三第3-4节', '通识必修', NULL),
 ('C4010', '艺术鉴赏', 1.5, 'K23010', 'T2002', '艺术与美学入门', '艺术学院', 100, '周五第5-6节', '通识选修', NULL),
 ('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 60, '周三第7-8节', '通识选修', NULL),
-('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL)
+('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL),
+('C9001', 'Mantis重复选课测试', 1.0, 'BUG-DUP-001', 'T2001', '实验三第一轮缺陷复现课程：用于验证重复选课判断条件被反转后的拦截问题', '质量审计实验', 30, '周六第3-4节', '缺陷复现', NULL),
+('C9002', 'Mantis容量边界测试', 1.0, 'BUG-CAP-001', 'T2001', '实验三第二轮缺陷复现课程：容量为1且预置1条选课记录，用于验证满员边界判断', '质量审计实验', 1, '周六第5-6节', '缺陷复现', NULL)
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
 score = VALUES(score),
@@ -272,6 +282,9 @@ max_credits = VALUES(max_credits),
 description = VALUES(description);
 
 -- ============ 演示数据：选课记录（符合业务逻辑的完整数据） ============
+
+-- 重置 Mantis 缺陷复现实验课程的选课记录，保证重复导入后仍可稳定复现
+DELETE FROM tb_sct WHERE courseid IN ('C9001', 'C9002');
 
 -- 【学生1：陈知远 (S3001, 大二)】
 -- 上学期（大一下）已修课程：Java基础、数据结构、大学英语（已录入成绩）
@@ -333,6 +346,20 @@ INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) V
 ('R5013', 'C4001', 'S3003', 'T2001', NULL, 0, '2024-09-01 09:00:00'),  -- Java基础（本学期选课，未录入成绩）
 ('R5014', 'C4009', 'S3003', 'T2001', NULL, 0, '2024-09-01 10:00:00'),  -- 大学英语（本学期选课，未录入成绩）
 ('R5015', 'C4012', 'S3003', 'T2001', NULL, 0, '2024-09-01 11:00:00')   -- 音乐欣赏（本学期选课，未录入成绩）
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- 【Mantis实验三：容量边界缺陷复现基线】
+-- C9002 容量为1，这里预置1条选课记录，使课程刚好满员。
+-- 正确代码 currentCount >= maxStudents 会拦截后续选课；
+-- 植入缺陷 currentCount > maxStudents 会错误放行第2名学生。
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('R9002', 'C9002', 'S3001', 'T2001', NULL, 0, '2026-06-01 09:00:00')
 ON DUPLICATE KEY UPDATE
 courseid = VALUES(courseid),
 studentId = VALUES(studentId),

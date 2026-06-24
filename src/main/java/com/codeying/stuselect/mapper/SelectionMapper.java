@@ -111,6 +111,7 @@ public interface SelectionMapper extends BaseMapper<SelectionRecord> {
       <if test="excludeId != null and excludeId != ''">
         and id != #{excludeId}
       </if>
+      FOR UPDATE
       </script>
       """)
   long countByCourse(@Param("courseId") String courseId, @Param("excludeId") String excludeId);

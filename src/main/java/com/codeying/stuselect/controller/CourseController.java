@@ -2,6 +2,7 @@ package com.codeying.stuselect.controller;
 
 import com.codeying.stuselect.common.ApiResponse;
 import com.codeying.stuselect.common.PageResult;
+import com.codeying.stuselect.dto.CourseListCriteria;
 import com.codeying.stuselect.model.Course;
 import jakarta.validation.Valid;
 import com.codeying.stuselect.service.CourseService;
@@ -39,7 +40,16 @@ public class CourseController {
       HttpSession session) {
     return ApiResponse.success(
         courseService.list(
-            keyword, dept, teacherId, minScore, maxScore, onlyAvailable, page, pageSize, session));
+            new CourseListCriteria(
+                keyword,
+                dept,
+                teacherId,
+                minScore,
+                maxScore,
+                onlyAvailable,
+                page,
+                pageSize),
+            session));
   }
 
   @PostMapping

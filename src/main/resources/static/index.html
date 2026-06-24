@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/app.css?v=20260505-register-reason">
 </head>
 <body>
 <div id="app">
@@ -61,11 +61,11 @@
           <form v-if="authMode === 'login'" class="auth-form auth-form-card" @submit.prevent="login">
             <label>
               <span>用户名</span>
-              <input v-model.trim="loginForm.username" type="text" maxlength="20" placeholder="请输入账号">
+              <input v-model.trim="loginForm.username" type="text" maxlength="20" autocomplete="username" placeholder="请输入账号">
             </label>
             <label>
               <span>密码</span>
-              <input v-model="loginForm.password" type="password" maxlength="20" placeholder="请输入密码">
+              <input v-model="loginForm.password" type="password" maxlength="20" autocomplete="current-password" placeholder="请输入密码">
             </label>
             <label>
               <span>登录身份</span>
@@ -80,22 +80,18 @@
             </button>
           </form>
 
-          <form v-else class="auth-form auth-form-card" @submit.prevent="register">
+          <form v-else class="auth-form auth-form-card" novalidate @submit.prevent="register">
             <label>
               <span>用户名</span>
-              <input v-model.trim="registerForm.username" type="text" maxlength="20" placeholder="创建登录账号">
+              <input v-model.trim="registerForm.username" type="text" autocomplete="username" :title="authRules.usernameHint" placeholder="创建登录账号">
+              <small class="field-hint">{{ authRules.usernameHint }}</small>
             </label>
             <label>
               <span>密码</span>
-              <input v-model="registerForm.password" type="password" maxlength="20" placeholder="创建登录密码">
+              <input v-model="registerForm.password" type="password" autocomplete="new-password" :title="authRules.passwordHint" placeholder="创建登录密码">
+              <small class="field-hint">{{ authRules.passwordHint }}</small>
             </label>
-            <label>
-              <span>注册身份</span>
-              <select v-model="registerForm.role">
-                <option value="student">学生</option>
-              </select>
-            </label>
-            <p class="module-copy">当前仅开放学生自助注册。教师和管理员账号请由管理员在系统内创建。</p>
+            <p class="module-copy">当前仅开放学生自助注册，注册身份固定为学生。教师和管理员账号请由管理员在系统内创建。</p>
             <button class="primary-button primary-button-accent wide" type="submit" :disabled="pending">
               {{ pending ? '提交中...' : '创建账号' }}
             </button>
@@ -517,13 +513,19 @@
               <template v-if="session.role === 'student'">
                 <label class="span-2">
                   <span>选择课程</span>
-                  <select v-model="modal.form.courseId">
+                  <select v-model="modal.form.courseId" @change="clearModalFeedback">
                     <option value="">请选择课程</option>
                     <option v-for="course in references.courses" :key="course.id" :value="course.id">
                       {{ course.name }} / {{ course.teacherName || '待安排教师' }} / {{ course.timeSlot || '未排课' }} / {{ course.maxStudents > 0 ? `${course.maxStudents}人` : '不限' }}
                     </option>
                   </select>
                 </label>
+                <p v-if="modal.feedback.text" class="modal-feedback span-2" :class="modal.feedback.type" aria-live="polite">
+                  {{ modal.feedback.text }}
+                </p>
+                <p v-else-if="selectedCourseStatus" class="modal-feedback span-2" :class="selectedCourseStatus.type" aria-live="polite">
+                  {{ selectedCourseStatus.text }}
+                </p>
                 <div class="inline-note span-2">
                   <strong>提交说明</strong>
                   <p>学生发起选课后，成绩会由授课教师在后续统一录入。</p>
@@ -537,7 +539,7 @@
               <template v-else>
                 <label>
                   <span>课程</span>
-                  <select v-model="modal.form.courseId">
+                  <select v-model="modal.form.courseId" @change="clearModalFeedback">
                     <option value="">请选择课程</option>
                     <option v-for="course in references.courses" :key="course.id" :value="course.id">
                       {{ course.name }} / {{ course.teacherName || '待安排教师' }} / {{ course.timeSlot || '未排课' }} / {{ course.maxStudents > 0 ? `${course.maxStudents}人` : '不限' }}
@@ -553,6 +555,12 @@
                     </option>
                   </select>
                 </label>
+                <p v-if="modal.feedback.text" class="modal-feedback span-2" :class="modal.feedback.type" aria-live="polite">
+                  {{ modal.feedback.text }}
+                </p>
+                <p v-else-if="selectedCourseStatus" class="modal-feedback span-2" :class="selectedCourseStatus.type" aria-live="polite">
+                  {{ selectedCourseStatus.text }}
+                </p>
                 <label class="span-2"><span>成绩</span><input v-model.number="modal.form.score" type="number" min="0" max="100" step="0.5"></label>
               </template>
             </template>
@@ -589,6 +597,6 @@
 </div>
 
 <script src="/assets/vendor/vue.global.prod.js"></script>
-<script src="/assets/app.js"></script>
+<script src="/assets/app.js?v=20260601-selection-feedback"></script>
 </body>
 </html>

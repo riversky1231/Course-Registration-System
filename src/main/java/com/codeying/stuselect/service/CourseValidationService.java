@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +26,7 @@ public class CourseValidationService {
   private final SemesterCreditLimitMapper creditLimitMapper;
   private final SelectionMapper selectionMapper;
   private final StudentMapper studentMapper;
+  private final CourseMapper courseMapper;
 
   public CourseValidationService(
       CoursePrerequisiteMapper prerequisiteMapper,
@@ -31,13 +34,15 @@ public class CourseValidationService {
       CourseTypeLimitMapper typeLimitMapper,
       SemesterCreditLimitMapper creditLimitMapper,
       SelectionMapper selectionMapper,
-      StudentMapper studentMapper) {
+      StudentMapper studentMapper,
+      CourseMapper courseMapper) {
     this.prerequisiteMapper = prerequisiteMapper;
     this.mutexMapper = mutexMapper;
     this.typeLimitMapper = typeLimitMapper;
     this.creditLimitMapper = creditLimitMapper;
     this.selectionMapper = selectionMapper;
     this.studentMapper = studentMapper;
+    this.courseMapper = courseMapper;
   }
 
   /**
@@ -66,6 +71,22 @@ public class CourseValidationService {
    * 必须先修完前置课程且成绩达标
    */
   public void validatePrerequisites(String courseId, String studentId) {
+    // 使用Set追踪访问过的课程，防止循环依赖导致无限递归
+    validatePrerequisitesRecursive(courseId, studentId, new HashSet<>());
+  }
+
+  /**
+   * 递归校验先修课程（带循环依赖检测）
+   */
+  private void validatePrerequisitesRecursive(String courseId, String studentId, Set<String> visited) {
+    // 检测循环依赖
+    if (visited.contains(courseId)) {
+      throw new AppException(
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          "检测到循环先修课程依赖，请联系管理员修正课程配置");
+    }
+    visited.add(courseId);
+
     List<CoursePrerequisite> prerequisites = prerequisiteMapper.selectWithNamesByCourseId(courseId);
     if (prerequisites.isEmpty()) {
       return; // 没有先修要求
@@ -103,6 +124,9 @@ public class CourseValidationService {
                 + (completed.getScore() == null ? "未录入" : completed.getScore())
                 + "分）");
       }
+
+      // 递归校验先修课程的先修课程（检测整个依赖链）
+      validatePrerequisitesRecursive(prereq.getPrerequisiteCourseId(), studentId, visited);
     }
   }
 
@@ -167,12 +191,20 @@ public class CourseValidationService {
     }
 
     // 统计学生已选该类型课程数量
-    // 修复SQL注入漏洞：使用参数化查询替代字符串拼接
+    // 修复SQL注入漏洞：先查询该类型的所有课程ID，再用IN查询
+    List<String> courseIdsOfType = courseMapper.selectList(
+        new LambdaQueryWrapper<Course>()
+            .eq(Course::getCourseType, course.getCourseType())
+    ).stream().map(Course::getId).collect(Collectors.toList());
+
+    if (courseIdsOfType.isEmpty()) {
+      return; // 该类型没有课程
+    }
+
     LambdaQueryWrapper<SelectionRecord> wrapper =
         new LambdaQueryWrapper<SelectionRecord>()
             .eq(SelectionRecord::getStudentId, studentId)
-            .apply("course_id IN (SELECT id FROM tb_course WHERE course_type = {0})",
-                course.getCourseType());
+            .in(SelectionRecord::getCourseId, courseIdsOfType);
 
     // 排除当前正在更新的选课记录（用于更新场景）
     if (StringUtils.hasText(excludeSelectionId)) {

@@ -485,6 +485,17 @@ p {
   color: rgba(24, 55, 93, 0.34);
 }
 
+.auth-form-card input:invalid:not(:placeholder-shown) {
+  border-color: rgba(220, 38, 38, 0.5);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
+}
+
+.field-hint {
+  color: rgba(24, 55, 93, 0.48);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .radio-group {
   display: flex;
   flex-wrap: wrap;
@@ -1720,6 +1731,34 @@ tbody tr:hover {
 
 .inline-note strong {
   color: var(--text);
+}
+
+.modal-feedback {
+  margin: -4px 0 0;
+  padding: 13px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(24, 55, 93, 0.12);
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 700;
+}
+
+.modal-feedback.success {
+  color: #075f43;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.24);
+}
+
+.modal-feedback.error {
+  color: #9f1f1f;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.26);
+}
+
+.modal-feedback.info {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.18);
 }
 
 @media (max-width: 1280px) {

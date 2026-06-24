@@ -2,6 +2,7 @@ package com.codeying.stuselect.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codeying.stuselect.common.AppException;
+import com.codeying.stuselect.common.CredentialRules;
 import com.codeying.stuselect.common.IdGenerator;
 import com.codeying.stuselect.common.PageQuery;
 import com.codeying.stuselect.common.PageResult;
@@ -10,38 +11,71 @@ import com.codeying.stuselect.common.UserSession;
 import com.codeying.stuselect.mapper.StudentMapper;
 import com.codeying.stuselect.model.Student;
 import jakarta.servlet.http.HttpSession;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-
+/**
+ * Manages student account query, profile update, and administrator
+ * maintenance actions.
+ */
 @Service
 public class StudentService {
 
+  /** Student persistence mapper. */
   private final StudentMapper studentMapper;
+
+  /** Session validation service. */
   private final SessionService sessionService;
+
+  /** Password encoding service. */
   private final PasswordService passwordService;
+
+  /** Administrator audit log service. */
   private final AdminAuditLogService adminAuditLogService;
 
+  /**
+   * Creates a student service with mapper, session, password, and audit
+   * dependencies.
+   *
+   * @param studentMapperBean student mapper
+   * @param sessionServiceBean session service
+   * @param passwordServiceBean password service
+   * @param auditLogService audit log service
+   */
   public StudentService(
-      StudentMapper studentMapper,
-      SessionService sessionService,
-      PasswordService passwordService,
-      AdminAuditLogService adminAuditLogService) {
-    this.studentMapper = studentMapper;
-    this.sessionService = sessionService;
-    this.passwordService = passwordService;
-    this.adminAuditLogService = adminAuditLogService;
+      final StudentMapper studentMapperBean,
+      final SessionService sessionServiceBean,
+      final PasswordService passwordServiceBean,
+      final AdminAuditLogService auditLogService) {
+    this.studentMapper = studentMapperBean;
+    this.sessionService = sessionServiceBean;
+    this.passwordService = passwordServiceBean;
+    this.adminAuditLogService = auditLogService;
   }
 
+  /**
+   * Returns paged students visible to the current user.
+   *
+   * @param keyword search keyword
+   * @param page requested page
+   * @param pageSize requested page size
+   * @param session current HTTP session
+   * @return paged student result
+   */
   public PageResult<Student> list(
-      String keyword, Integer page, Integer pageSize, HttpSession session) {
-    UserSession current = sessionService.requireUser(session);
+      final String keyword,
+      final Integer page,
+      final Integer pageSize,
+      final HttpSession session) {
+    final UserSession current = sessionService.requireUser(session);
     if (current.getRole() == Role.STUDENT) {
-      return PageResult.of(java.util.List.of(require(current.getId())), PageQuery.of(page, pageSize));
+      return PageResult.of(
+          List.of(require(current.getId())),
+          PageQuery.of(page, pageSize));
     }
-    LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<>();
+    final LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<>();
     if (StringUtils.hasText(keyword)) {
       wrapper.and(
           w ->
@@ -58,35 +92,68 @@ public class StudentService {
                   .like(Student::getSclass, keyword));
     }
     wrapper.orderByDesc(Student::getId);
-    return PageResult.of(studentMapper.selectList(wrapper), PageQuery.of(page, pageSize));
+    return PageResult.of(
+        studentMapper.selectList(wrapper),
+        PageQuery.of(page, pageSize));
   }
 
-  public List<Student> listAllVisible(HttpSession session) {
-    UserSession current = sessionService.requireUser(session);
+  /**
+   * Lists all students visible to the current user.
+   *
+   * @param session current HTTP session
+   * @return visible students
+   */
+  public List<Student> listAllVisible(final HttpSession session) {
+    final UserSession current = sessionService.requireUser(session);
     if (current.getRole() == Role.STUDENT) {
       return List.of(require(current.getId()));
     }
-    return studentMapper.selectList(new LambdaQueryWrapper<Student>().orderByDesc(Student::getId));
+    return studentMapper.selectList(
+        new LambdaQueryWrapper<Student>().orderByDesc(Student::getId));
   }
 
-  public Student create(Student student, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    if (!StringUtils.hasText(student.getUsername()) || !StringUtils.hasText(student.getPassword())) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "用户名和密码不能为空");
-    }
+  /**
+   * Creates a student account.
+   *
+   * @param student submitted student data
+   * @param session current HTTP session
+   * @return created student
+   */
+  public Student create(final Student student, final HttpSession session) {
+    final UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    CredentialRules.requirePassword(student.getPassword());
     ensureUsernameAvailable(student.getUsername(), null);
     student.setId(IdGenerator.newId());
     student.setPassword(passwordService.encode(student.getPassword()));
     studentMapper.insert(student);
     adminAuditLogService.record(
-        current, "新增", "学生", student.getId(), displayName(student), "账号：" + student.getUsername());
+        current,
+        "新增",
+        "学生",
+        student.getId(),
+        displayName(student),
+        "账号：" + student.getUsername());
     return studentMapper.selectById(student.getId());
   }
 
-  public Student update(String id, Student student, HttpSession session) {
-    UserSession actor = sessionService.requireRole(session, Role.ADMIN);
-    Student target = require(id);
-    ensureUsernameAvailable(defaultValue(student.getUsername(), target.getUsername()), target.getId());
+  /**
+   * Updates a student account by administrator.
+   *
+   * @param id student id
+   * @param student submitted student data
+   * @param session current HTTP session
+   * @return updated student
+   */
+  public Student update(
+      final String id,
+      final Student student,
+      final HttpSession session) {
+    final UserSession actor = sessionService.requireRole(session, Role.ADMIN);
+    final Student target = require(id);
+    final String nextUsername =
+        defaultValue(student.getUsername(), target.getUsername());
+    CredentialRules.requirePasswordIfProvided(student.getPassword());
+    ensureUsernameAvailable(nextUsername, target.getId());
     mergeStudent(target, student);
     studentMapper.updateById(target);
     adminAuditLogService.record(
@@ -95,62 +162,124 @@ public class StudentService {
         "学生",
         target.getId(),
         displayName(target),
-        "账号：" + target.getUsername() + "，学号：" + defaultValue(target.getNumb(), "-"));
+        "账号："
+            + target.getUsername()
+            + "，学号："
+            + defaultValue(target.getNumb(), "-"));
     return studentMapper.selectById(id);
   }
 
-  public void delete(String id, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    Student target = require(id);
+  /**
+   * Deletes a student account.
+   *
+   * @param id student id
+   * @param session current HTTP session
+   */
+  public void delete(final String id, final HttpSession session) {
+    final UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    final Student target = require(id);
     studentMapper.deleteById(id);
     adminAuditLogService.record(
-        current, "删除", "学生", target.getId(), displayName(target), "账号：" + target.getUsername());
+        current,
+        "删除",
+        "学生",
+        target.getId(),
+        displayName(target),
+        "账号：" + target.getUsername());
   }
 
-  public Student getProfile(HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.STUDENT);
+  /**
+   * Returns the profile of the logged-in student.
+   *
+   * @param session current HTTP session
+   * @return student profile
+   */
+  public Student getProfile(final HttpSession session) {
+    final UserSession current =
+        sessionService.requireRole(session, Role.STUDENT);
     return require(current.getId());
   }
 
-  public Student updateProfile(Student input, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.STUDENT);
-    Student student = require(current.getId());
-    ensureUsernameAvailable(defaultValue(input.getUsername(), student.getUsername()), student.getId());
+  /**
+   * Updates the profile of the logged-in student.
+   *
+   * @param input submitted profile data
+   * @param session current HTTP session
+   * @return updated student profile
+   */
+  public Student updateProfile(
+      final Student input,
+      final HttpSession session) {
+    final UserSession current =
+        sessionService.requireRole(session, Role.STUDENT);
+    final Student student = require(current.getId());
+    final String nextUsername =
+        defaultValue(input.getUsername(), student.getUsername());
+    CredentialRules.requirePasswordIfProvided(input.getPassword());
+    ensureUsernameAvailable(nextUsername, student.getId());
     mergeStudent(student, input);
     studentMapper.updateById(student);
     return studentMapper.selectById(student.getId());
   }
 
-  public long count(HttpSession session) {
-    UserSession current = sessionService.requireUser(session);
+  /**
+   * Counts students visible to the current user.
+   *
+   * @param session current HTTP session
+   * @return visible student count
+   */
+  public long count(final HttpSession session) {
+    final UserSession current = sessionService.requireUser(session);
     return current.getRole() == Role.ADMIN || current.getRole() == Role.TEACHER
         ? studentMapper.selectCount(null)
         : 1L;
   }
 
-  public Student findByUsername(String username) {
+  /**
+   * Finds a student by username.
+   *
+   * @param username account username
+   * @return matched student or null
+   */
+  public Student findByUsername(final String username) {
     return studentMapper.selectOne(
-        new LambdaQueryWrapper<Student>().eq(Student::getUsername, username).last("limit 1"));
+        new LambdaQueryWrapper<Student>()
+            .eq(Student::getUsername, username)
+            .last("limit 1"));
   }
 
-  public Student require(String id) {
-    Student student = studentMapper.selectById(id);
+  /**
+   * Loads a student or throws when it does not exist.
+   *
+   * @param id student id
+   * @return existing student
+   */
+  public Student require(final String id) {
+    final Student student = studentMapper.selectById(id);
     if (student == null) {
       throw new AppException(HttpStatus.NOT_FOUND, "学生不存在");
     }
     return student;
   }
 
-  public void lockForSelection(String id) {
-    Student student = studentMapper.selectByIdForUpdate(id);
+  /**
+   * Locks a student row before creating a selection.
+   *
+   * @param id student id
+   */
+  public void lockForSelection(final String id) {
+    final Student student = studentMapper.selectByIdForUpdate(id);
     if (student == null) {
       throw new AppException(HttpStatus.NOT_FOUND, "学生不存在");
     }
   }
 
-  private void mergeStudent(Student target, Student input) {
+  private void mergeStudent(final Student target, final Student input) {
     target.setUsername(defaultValue(input.getUsername(), target.getUsername()));
-    target.setPassword(passwordService.encodeIfProvided(input.getPassword(), target.getPassword()));
+    target.setPassword(
+        passwordService.encodeIfProvided(
+            input.getPassword(),
+            target.getPassword()));
     target.setNumb(input.getNumb());
     target.setSname(input.getSname());
     target.setSdept(input.getSdept());
@@ -163,21 +292,23 @@ public class StudentService {
     target.setSclass(input.getSclass());
   }
 
-  private String defaultValue(String input, String fallback) {
+  private String defaultValue(final String input, final String fallback) {
     return StringUtils.hasText(input) ? input : fallback;
   }
 
-  private void ensureUsernameAvailable(String username, String currentId) {
-    if (!StringUtils.hasText(username)) {
-      return;
-    }
-    Student existed = findByUsername(username);
+  private void ensureUsernameAvailable(
+      final String username,
+      final String currentId) {
+    CredentialRules.requireUsername(username);
+    final Student existed = findByUsername(username);
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "学生账号已存在");
     }
   }
 
-  private String displayName(Student student) {
-    return StringUtils.hasText(student.getSname()) ? student.getSname() : student.getUsername();
+  private String displayName(final Student student) {
+    return StringUtils.hasText(student.getSname())
+        ? student.getSname()
+        : student.getUsername();
   }
 }

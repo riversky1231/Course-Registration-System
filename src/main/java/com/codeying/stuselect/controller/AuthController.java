@@ -5,6 +5,7 @@ import com.codeying.stuselect.common.AppException;
 import com.codeying.stuselect.common.UserSession;
 import com.codeying.stuselect.dto.AuthRequests;
 import com.codeying.stuselect.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,8 +27,8 @@ public class AuthController {
 
   @PostMapping("/login")
   public ApiResponse<UserSession> login(
-      @Valid @RequestBody AuthRequests.LoginRequest request, HttpSession session) {
-    return ApiResponse.success(authService.login(request, session));
+      @Valid @RequestBody AuthRequests.LoginRequest request, HttpServletRequest servletRequest) {
+    return ApiResponse.success(authService.login(request, servletRequest));
   }
 
   @PostMapping("/register")

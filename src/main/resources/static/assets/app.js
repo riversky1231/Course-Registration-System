@@ -186,6 +186,12 @@ const SUMMARY_HINTS = {
 const SEMESTER_LABEL = "2026 春季学期";
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const VIEW_STORAGE_KEY = "scs-current-view";
+const AUTH_RULES = {
+  usernamePattern: /^[A-Za-z][A-Za-z0-9_]{3,19}$/,
+  passwordPattern: /^[A-Za-z0-9_@#$%]{6,20}$/,
+  usernameHint: "4-20位，以字母开头，仅支持字母、数字、下划线",
+  passwordHint: "6-20位，仅支持字母、数字、下划线和 @ # $ %",
+};
 
 const { createApp, ref, reactive, computed, onMounted } = Vue;
 
@@ -309,6 +315,32 @@ function normalizeOptionalNumber(value) {
   }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
+}
+
+function validateLoginForm(form) {
+  if (!form.username || !form.username.trim()) {
+    return "用户名不能为空";
+  }
+  if (!form.password || !form.password.trim()) {
+    return "密码不能为空";
+  }
+  return "";
+}
+
+function validateRegisterForm(form) {
+  if (!form.username || !form.username.trim()) {
+    return "用户名不能为空";
+  }
+  if (!AUTH_RULES.usernamePattern.test(form.username.trim())) {
+    return AUTH_RULES.usernameHint;
+  }
+  if (!form.password || !form.password.trim()) {
+    return "密码不能为空";
+  }
+  if (!AUTH_RULES.passwordPattern.test(form.password)) {
+    return AUTH_RULES.passwordHint;
+  }
+  return "";
 }
 
 function createEmptyProfile() {
@@ -501,6 +533,10 @@ createApp({
       visible: false,
       mode: "create",
       form: {},
+      feedback: {
+        type: "info",
+        text: "",
+      },
     });
     const message = reactive({
       type: "info",
@@ -529,6 +565,53 @@ createApp({
     const courseDepartments = computed(() =>
       [...new Set(references.courses.map((item) => safeText(item.dept, "")).filter(Boolean))].sort()
     );
+    const selectedModalCourse = computed(() => {
+      if (currentView.value !== "selections" || !modal.form?.courseId) {
+        return null;
+      }
+      return references.courses.find((course) => course.id === modal.form.courseId) || null;
+    });
+    const selectedCourseStatus = computed(() => {
+      const course = selectedModalCourse.value;
+      if (!course) {
+        return null;
+      }
+      const maxStudents = Number(course.maxStudents || 0);
+      const selectedCount = Number(course.selectedCount || 0);
+      const alreadySelectedByCurrentStudent =
+        (records.selections || []).some((item) => item.courseId === course.id);
+
+      if (course.id === "C9001") {
+        return {
+          type: alreadySelectedByCurrentStudent ? "error" : "success",
+          text: alreadySelectedByCurrentStudent
+            ? "当前账号已经选过这门课；请重新导入 SQL 重置数据后再截图。"
+            : "当前账号未选过这门课，这是第一次选择。第一轮植入 duplicated == null 后，点击保存若提示“该学生已选过这门课”，就是本轮缺陷现场。",
+        };
+      }
+
+      const trialNote = course.id === "C9002" ? "第二轮测试课：用于容量边界截图。" : "";
+
+      if (maxStudents <= 0) {
+        return {
+          type: "info",
+          text: `当前课程不限制容量，已选 ${selectedCount} 人。${trialNote}`,
+        };
+      }
+
+      const remaining = maxStudents - selectedCount;
+      if (remaining <= 0) {
+        return {
+          type: "error",
+          text: `当前已选 ${selectedCount}/${maxStudents} 人，课程已满；正确代码下点击保存会被拦截。${trialNote}`,
+        };
+      }
+
+      return {
+        type: "success",
+        text: `当前已选 ${selectedCount}/${maxStudents} 人，剩余 ${remaining} 个名额。${trialNote}`,
+      };
+    });
 
     const overviewCards = computed(() =>
       availableViews.value
@@ -691,9 +774,18 @@ createApp({
       }, 3200);
     }
 
+    function setModalFeedback(type, text) {
+      modal.feedback.type = type;
+      modal.feedback.text = text;
+    }
+
+    function clearModalFeedback() {
+      setModalFeedback("info", "");
+    }
+
     async function api(url, options = {}) {
       const config = {
-        credentials: "same-origin",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           ...(options.headers || {}),
@@ -1101,24 +1193,42 @@ createApp({
     }
 
     async function login() {
+      const validationMessage = validateLoginForm(loginForm);
+      if (validationMessage) {
+        setMessage("error", validationMessage);
+        return;
+      }
+      let loginAccepted = false;
       try {
         pending.value = true;
         session.value = await api("/api/auth/login", {
           method: "POST",
           body: JSON.stringify(loginForm),
         });
+        loginAccepted = true;
+        session.value = await api("/api/auth/me");
         currentView.value = resolveCurrentView(session.value.role);
         writeStoredView(currentView.value);
         await hydrateWorkspace();
         setMessage("success", "登录成功，已进入工作台");
       } catch (error) {
-        setMessage("error", error.message);
+        if (loginAccepted && error.message === "请先登录") {
+          setMessage("error", "登录成功，但浏览器没有保存会话，请允许 localhost 的 Cookie 后重试");
+        } else {
+          setMessage("error", error.message);
+        }
       } finally {
         pending.value = false;
       }
     }
 
     async function register() {
+      registerForm.role = "student";
+      const validationMessage = validateRegisterForm(registerForm);
+      if (validationMessage) {
+        setMessage("error", validationMessage);
+        return;
+      }
       try {
         pending.value = true;
         await api("/api/auth/register", {
@@ -1168,6 +1278,7 @@ createApp({
       modal.visible = true;
       modal.mode = "create";
       modal.form = createEmptyModal(currentView.value);
+      clearModalFeedback();
       if (currentView.value === "courses" && session.value?.role === "teacher") {
         modal.form.tid = session.value.id;
       }
@@ -1177,11 +1288,13 @@ createApp({
       modal.visible = true;
       modal.mode = "edit";
       modal.form = prepareModalForm(currentView.value, row);
+      clearModalFeedback();
     }
 
     function closeModal() {
       modal.visible = false;
       modal.form = {};
+      clearModalFeedback();
     }
 
     async function saveModal() {
@@ -1201,14 +1314,21 @@ createApp({
             body: JSON.stringify(payload),
           });
         }
-        closeModal();
         const jobs = [loadModule(view), loadSummary(), loadInsights(), loadReferences()];
         if (session.value?.role === "student") {
           jobs.push(loadGradeReport());
         }
         await Promise.all(jobs);
+        if (view === "selections") {
+          setModalFeedback("success", session.value?.role === "student" ? "选课提交成功，系统已生成选课记录。" : "选课记录保存成功。");
+        } else {
+          closeModal();
+        }
         setMessage("success", "保存成功");
       } catch (error) {
+        if (view === "selections") {
+          setModalFeedback("error", error.message);
+        }
         setMessage("error", error.message);
       } finally {
         pending.value = false;
@@ -1306,6 +1426,7 @@ createApp({
       courseFilters,
       modal,
       message,
+      authRules: AUTH_RULES,
       semesterLabel: SEMESTER_LABEL,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
       roleLabel,
@@ -1317,6 +1438,7 @@ createApp({
       gradeReportRows,
       gradeReportPager,
       courseDepartments,
+      selectedCourseStatus,
       showSearchBar,
       canCreateCurrent,
       canEditRow,
@@ -1345,6 +1467,7 @@ createApp({
       openCreate,
       openEdit,
       closeModal,
+      clearModalFeedback,
       saveModal,
       removeRow,
       saveProfile,

@@ -14,6 +14,7 @@ public interface CourseMapper extends BaseMapper<Course> {
       <script>
       select c.id, c.name, c.score, c.numb, c.tid, c.jianjie, c.dept,
              c.max_students as maxStudents, c.time_slot as timeSlot,
+             (select count(1) from tb_sct s where s.courseid = c.id) as selectedCount,
              coalesce(nullif(t.tname, ''), t.username) as teacherName
       from tb_course c
       left join tb_teacher t on t.id = c.tid
@@ -38,6 +39,7 @@ public interface CourseMapper extends BaseMapper<Course> {
       """
       select c.id, c.name, c.score, c.numb, c.tid, c.jianjie, c.dept,
              c.max_students as maxStudents, c.time_slot as timeSlot,
+             (select count(1) from tb_sct s where s.courseid = c.id) as selectedCount,
              coalesce(nullif(t.tname, ''), t.username) as teacherName
       from tb_course c
       left join tb_teacher t on t.id = c.tid
@@ -49,6 +51,7 @@ public interface CourseMapper extends BaseMapper<Course> {
       """
       select c.id, c.name, c.score, c.numb, c.tid, c.jianjie, c.dept,
              c.max_students as maxStudents, c.time_slot as timeSlot,
+             (select count(1) from tb_sct s where s.courseid = c.id) as selectedCount,
              coalesce(nullif(t.tname, ''), t.username) as teacherName
       from tb_course c
       left join tb_teacher t on t.id = c.tid
@@ -61,6 +64,7 @@ public interface CourseMapper extends BaseMapper<Course> {
       """
       select c.id, c.name, c.score, c.numb, c.tid, c.jianjie, c.dept,
              c.max_students as maxStudents, c.time_slot as timeSlot,
+             (select count(1) from tb_sct s where s.courseid = c.id) as selectedCount,
              coalesce(nullif(t.tname, ''), t.username) as teacherName
       from tb_course c
       left join tb_teacher t on t.id = c.tid

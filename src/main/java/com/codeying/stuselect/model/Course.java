@@ -25,6 +25,8 @@ public class Course {
   private String tid;
   @TableField(exist = false)
   private String teacherName;
+  @TableField(exist = false)
+  private Long selectedCount;
   @Size(max = 255, message = "课程简介长度不能超过255位")
   private String jianjie;
   @Size(max = 255, message = "开课学院长度不能超过255位")
@@ -83,6 +85,14 @@ public class Course {
 
   public void setTeacherName(String teacherName) {
     this.teacherName = teacherName;
+  }
+
+  public Long getSelectedCount() {
+    return selectedCount;
+  }
+
+  public void setSelectedCount(Long selectedCount) {
+    this.selectedCount = selectedCount;
   }
 
   public String getJianjie() {

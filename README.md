@@ -42,7 +42,7 @@
 2. 默认数据库连接如下：
 
 ```yaml
-DB_URL=jdbc:mysql://localhost:3306/app_stu_select?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false
+DB_URL=jdbc:mysql://127.0.0.1:3308/app_stu_select?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false
 DB_USERNAME=app_stu_select
 DB_PASSWORD=app_stu_select
 ```

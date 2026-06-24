@@ -7,3 +7,4 @@ progress.md
 findings.md
 
 *.log
+.runtime/
