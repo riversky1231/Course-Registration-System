@@ -6,7 +6,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Spring Security配置
@@ -22,6 +26,13 @@ public class SecurityConfig {
     CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
     requestHandler.setCsrfRequestAttributeName("_csrf");
 
+    // 强制每次请求都解析CSRF token，确保XSRF-TOKEN cookie被写入
+    CsrfTokenRequestHandler eagerHandler = (request, response, csrfTokenSupplier) -> {
+      CsrfToken csrfToken = csrfTokenSupplier.get();
+      csrfToken.getToken(); // 触发cookie写入
+      requestHandler.handle(request, response, () -> csrfToken);
+    };
+
     http
         // 允许所有请求通过（身份验证由SessionService处理）
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
@@ -29,7 +40,7 @@ public class SecurityConfig {
         // 启用CSRF保护
         .csrf(csrf -> csrf
             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-            .csrfTokenRequestHandler(requestHandler)
+            .csrfTokenRequestHandler(eagerHandler)
             // 登录和注册接口需要特殊处理（前端需要先获取CSRF token）
             .ignoringRequestMatchers("/api/auth/login", "/api/auth/register")
         )
