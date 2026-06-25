@@ -48,7 +48,9 @@ Override via environment variables if needed.
 
 **Demo accounts (password: `123456`):**
 - Admin: `admin`
-- Audit Admin: `audit_admin`
+- Academic Admin: `admin_jiaowu`
+
+Seed data volume: 5 admins, 30 teachers, 80 students.
 
 ## Architecture
 
@@ -150,17 +152,7 @@ The system implements a sophisticated **8-layer validation pipeline** for course
 - Uses pessimistic locking: `studentService.lockForSelection()` and `courseService.requireForUpdate()`
 - GPA calculation integrated into validation pipeline for credit limit checks
 
-**6. Notification System**
-- `NotificationService` creates `NotificationRecord` entries for:
-  - Course selection/drop
-  - Grade publication
-- Records are stored but not actively pushed (no email/SMS integration)
-
-**7. Audit Logging**
-- `AdminAuditLogService` records admin CRUD operations
-- Captures: admin ID, object type, object ID, action, description, timestamp
-
-**8. GPA Calculation**
+**6. GPA Calculation**
 - Formula: `GPA = (score - 50) / 10` for scores ≥ 60, else 0
 - Weighted by course credits
 - Computed in `SelectionService.gradeReport()` and `SelectionService.calculateStudentGPA()`
@@ -210,8 +202,7 @@ The system implements a sophisticated **8-layer validation pipeline** for course
    - **Layer 7**: `CourseValidationService.validateCourseTypeLimit()` - Type limit check
    - **Layer 8**: `CourseValidationService.validateCreditLimit()` - GPA-based credit cap
 5. `SelectionMapper.insert()` creates record
-6. `NotificationService.notifySelectionCreated()` logs notification
-7. Returns joined `SelectionRecord` with course/student/teacher names
+6. Returns joined `SelectionRecord` with course/student/teacher names
 
 ### Role-Based Data Visibility
 
@@ -266,11 +257,6 @@ sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);
 **Adding time-window checks:**
 ```java
 selectionWindowService.requireOpen("SELECT", currentUser);
-```
-
-**Adding audit logging:**
-```java
-adminAuditLogService.log(session, "Course", courseId, "UPDATE", "修改课程信息");
 ```
 
 **Configuring intelligent validation rules (via database):**

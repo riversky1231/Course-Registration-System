@@ -86,32 +86,9 @@ CREATE TABLE IF NOT EXISTS tb_sct (
     KEY idx_tb_sct_teaid (teaid)
 ) COMMENT '学生选课表';
 
-CREATE TABLE IF NOT EXISTS tb_admin_audit_log (
-    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
-    admin_id VARCHAR(32) COMMENT '操作管理员ID',
-    admin_username VARCHAR(20) COMMENT '操作管理员账号',
-    action VARCHAR(16) COMMENT '操作类型',
-    target_type VARCHAR(32) COMMENT '操作对象类型',
-    target_id VARCHAR(32) COMMENT '操作对象ID',
-    target_name VARCHAR(255) COMMENT '操作对象名称',
-    detail VARCHAR(500) COMMENT '操作详情',
-    createtime DATETIME COMMENT '操作时间'
-) COMMENT '管理员审计日志表';
-
-CREATE TABLE IF NOT EXISTS tb_notification (
-    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
-    recipient_id VARCHAR(32) COMMENT '接收人ID',
-    recipient_role VARCHAR(20) COMMENT '接收人角色',
-    recipient_name VARCHAR(255) COMMENT '接收人名称',
-    channel VARCHAR(16) COMMENT '通知渠道，当前统一为SYSTEM站内消息',
-    status VARCHAR(16) COMMENT '发送状态',
-    title VARCHAR(120) COMMENT '通知标题',
-    content VARCHAR(500) COMMENT '通知内容',
-    contact VARCHAR(255) COMMENT '联系地址',
-    result_message VARCHAR(255) COMMENT '结果说明',
-    createtime DATETIME COMMENT '创建时间',
-    senttime DATETIME COMMENT '发送时间'
-) COMMENT '通知记录表';
+-- 审计日志、消息中心模块已下线；若旧库中存在历史表，重新执行脚本时一并清除。
+DROP TABLE IF EXISTS tb_admin_audit_log;
+DROP TABLE IF EXISTS tb_notification;
 
 CREATE TABLE IF NOT EXISTS tb_selection_window (
     id VARCHAR(32) PRIMARY KEY COMMENT '主键',
@@ -165,9 +142,13 @@ CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
 -- 所有演示账号初始密码均为 123456，但数据库中保存的是 BCrypt 哈希值。
 SET @seed_password_hash = '$2a$10$8e3/3cz9z0kg7NGotuPXy.fRUEr32fHqXyN6JvE9YHE.kO8JsRx7q';
 
--- 仅保留超级管理员账号，确保系统可以正常登录
+-- 管理员账号（密码均为 123456）
 INSERT INTO tb_admin (id, username, password, name, tele) VALUES
-('A1001', 'admin', @seed_password_hash, '系统管理员', '13800000001')
+('A1001', 'admin', @seed_password_hash, '系统管理员', '13800000001'),
+('A1002', 'admin_jiaowu', @seed_password_hash, '教务管理员', '13800000002'),
+('A1003', 'admin_audit', @seed_password_hash, '运维管理员', '13800000003'),
+('A1004', 'admin_xuanke', @seed_password_hash, '选课管理员', '13800000004'),
+('A1005', 'admin_super', @seed_password_hash, '超级管理员', '13800000005')
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
@@ -190,6 +171,33 @@ ttel = VALUES(ttel),
 age = VALUES(age),
 gender = VALUES(gender);
 
+-- 批量生成教师 T2004~T2030（与上面 3 位合计 30 位，登录密码均为 123456）
+INSERT INTO tb_teacher (id, username, password, numb, tname, tbirthday, tposition, ttel, age, gender)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 30
+)
+SELECT
+  CONCAT('T', 2000 + n),
+  CONCAT('teacher', LPAD(n, 2, '0')),
+  @seed_password_hash,
+  CONCAT('2024', LPAD(n, 3, '0')),
+  CONCAT(
+    ELT(1 + MOD(n, 12), '王', '李', '张', '刘', '陈', '杨', '黄', '赵', '周', '吴', '徐', '孙'),
+    ELT(1 + MOD(n * 7, 14), '建国', '志强', '美玲', '晓东', '海燕', '文博', '思远', '雅琴', '俊杰', '丽华', '云帆', '佳怡', '泽涛', '若曦')),
+  DATE_ADD('1978-01-01', INTERVAL n * 97 DAY),
+  ELT(1 + MOD(n, 4), '教授', '副教授', '讲师', '助教'),
+  CONCAT('1381001', LPAD(n, 4, '0')),
+  32 + MOD(n, 25),
+  IF(MOD(n, 2) = 0, '男', '女')
+FROM seq
+ON DUPLICATE KEY UPDATE
+username = VALUES(username),
+password = VALUES(password),
+tname = VALUES(tname),
+tposition = VALUES(tposition);
+
 -- ============ 演示数据：学生（包含年级信息） ============
 INSERT INTO tb_student (id, username, password, numb, sname, sdept, sbirthday, tele, email, ssex, age, smajor, sclass, grade, enrollment_year) VALUES
 ('S3001', 'stu_chen', @seed_password_hash, '2023001', '陈知远', '信息工程学院', '2004-03-11 00:00:00', '13920010001', 'stu_chen@example.com', '男', 20, '软件工程', '软工2301', 2, 2023),
@@ -211,6 +219,40 @@ sclass = VALUES(sclass),
 grade = VALUES(grade),
 enrollment_year = VALUES(enrollment_year);
 
+-- 批量生成学生 S3004~S3080（与上面 3 位合计 80 位，登录密码均为 123456）
+INSERT INTO tb_student (id, username, password, numb, sname, sdept, sbirthday, tele, email, ssex, age, smajor, sclass, grade, enrollment_year)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 80
+)
+SELECT
+  CONCAT('S', 3000 + n),
+  CONCAT('student', LPAD(n, 2, '0')),
+  @seed_password_hash,
+  CONCAT('2023', LPAD(n, 3, '0')),
+  CONCAT(
+    ELT(1 + MOD(n, 12), '王', '李', '张', '刘', '陈', '杨', '黄', '赵', '周', '吴', '郑', '冯'),
+    ELT(1 + MOD(n * 5, 16), '子轩', '欣怡', '宇航', '梦琪', '浩然', '雨萱', '俊熙', '思婷', '明轩', '诗涵', '嘉豪', '可馨', '泽宇', '婧怡', '皓轩', '语桐')),
+  ELT(1 + MOD(n, 5), '信息工程学院', '数据科学学院', '外国语学院', '艺术学院', '创新学院'),
+  DATE_ADD('2003-01-01', INTERVAL n * 53 DAY),
+  CONCAT('1392001', LPAD(n, 4, '0')),
+  CONCAT('student', LPAD(n, 2, '0'), '@example.com'),
+  IF(MOD(n, 2) = 0, '男', '女'),
+  18 + MOD(n, 5),
+  ELT(1 + MOD(n, 6), '软件工程', '网络工程', '数据科学', '人工智能', '英语', '视觉传达'),
+  CONCAT(ELT(1 + MOD(n, 6), '软工', '网工', '数科', '智能', '英语', '视传'), 2300 + MOD(n, 4) + 1),
+  1 + MOD(n, 4),
+  2023 + MOD(n, 4)
+FROM seq
+ON DUPLICATE KEY UPDATE
+username = VALUES(username),
+password = VALUES(password),
+sname = VALUES(sname),
+sdept = VALUES(sdept),
+smajor = VALUES(smajor),
+grade = VALUES(grade);
+
 -- ============ 演示数据：课程（包含类型和年级限制） ============
 INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, time_slot, course_type, grade_limit) VALUES
 ('C4001', 'Java基础', 3.0, 'K23001', 'T2001', 'Java语言基础入门课程', '信息工程学院', 60, '周一第1-2节', '专业必修', 1),
@@ -224,9 +266,7 @@ INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, 
 ('C4009', '大学英语', 2.0, 'K23009', 'T2001', '通识英语课程', '外国语学院', 80, '周三第3-4节', '通识必修', NULL),
 ('C4010', '艺术鉴赏', 1.5, 'K23010', 'T2002', '艺术与美学入门', '艺术学院', 100, '周五第5-6节', '通识选修', NULL),
 ('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 60, '周三第7-8节', '通识选修', NULL),
-('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL),
-('C9001', 'Mantis重复选课测试', 1.0, 'BUG-DUP-001', 'T2001', '实验三第一轮缺陷复现课程：用于验证重复选课判断条件被反转后的拦截问题', '质量审计实验', 30, '周六第3-4节', '缺陷复现', NULL),
-('C9002', 'Mantis容量边界测试', 1.0, 'BUG-CAP-001', 'T2001', '实验三第二轮缺陷复现课程：容量为1且预置1条选课记录，用于验证满员边界判断', '质量审计实验', 1, '周六第5-6节', '缺陷复现', NULL)
+('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL)
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
 score = VALUES(score),
@@ -283,8 +323,9 @@ description = VALUES(description);
 
 -- ============ 演示数据：选课记录（符合业务逻辑的完整数据） ============
 
--- 重置 Mantis 缺陷复现实验课程的选课记录，保证重复导入后仍可稳定复现
+-- 清理历史测试课程 C9001/C9002（Mantis 缺陷复现实验）及其选课记录
 DELETE FROM tb_sct WHERE courseid IN ('C9001', 'C9002');
+DELETE FROM tb_course WHERE id IN ('C9001', 'C9002');
 
 -- 【学生1：陈知远 (S3001, 大二)】
 -- 上学期（大一下）已修课程：Java基础、数据结构、大学英语（已录入成绩）
@@ -354,19 +395,45 @@ score = VALUES(score),
 graded = VALUES(graded),
 createtime = VALUES(createtime);
 
--- 【Mantis实验三：容量边界缺陷复现基线】
--- C9002 容量为1，这里预置1条选课记录，使课程刚好满员。
--- 正确代码 currentCount >= maxStudents 会拦截后续选课；
--- 植入缺陷 currentCount > maxStudents 会错误放行第2名学生。
-INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
-('R9002', 'C9002', 'S3001', 'T2001', NULL, 0, '2026-06-01 09:00:00')
+-- 批量为新生 S3004~S3080 生成选课记录，让选课/成绩页面数据充足
+-- 通识必修《大学英语》(C4009)：已录入成绩
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 80
+)
+SELECT
+  CONCAT('RB', LPAD(n, 4, '0')),
+  'C4009',
+  CONCAT('S', 3000 + n),
+  'T2001',
+  60 + MOD(n * 7, 40),
+  1,
+  DATE_ADD('2025-03-01 09:00:00', INTERVAL n MINUTE)
+FROM seq
 ON DUPLICATE KEY UPDATE
-courseid = VALUES(courseid),
-studentId = VALUES(studentId),
-teaid = VALUES(teaid),
 score = VALUES(score),
-graded = VALUES(graded),
-createtime = VALUES(createtime);
+graded = VALUES(graded);
+
+-- 通识选修《创新创业》(C4011)：本学期在读，未录入成绩
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 80
+)
+SELECT
+  CONCAT('RC', LPAD(n, 4, '0')),
+  'C4011',
+  CONCAT('S', 3000 + n),
+  'T2003',
+  NULL,
+  0,
+  DATE_ADD('2025-09-01 09:00:00', INTERVAL n MINUTE)
+FROM seq
+ON DUPLICATE KEY UPDATE
+graded = VALUES(graded);
 
 -- ============ 演示数据：选课时间窗口（长期开放，便于本地测试） ============
 INSERT INTO tb_selection_window (id, action_type, name, start_time, end_time, enabled, description) VALUES

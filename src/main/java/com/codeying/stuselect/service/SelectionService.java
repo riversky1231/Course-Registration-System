@@ -53,9 +53,6 @@ public class SelectionService {
   /** Session validation service. */
   private final SessionService sessionService;
 
-  /** Notification publishing service. */
-  private final NotificationService notificationService;
-
   /** Selection window validation service. */
   private final SelectionWindowService selectionWindowService;
 
@@ -69,7 +66,6 @@ public class SelectionService {
    * @param courseServiceBean course service
    * @param studentServiceBean student service
    * @param sessionServiceBean session service
-   * @param notificationServiceBean notification service
    * @param selectionWindowServiceBean selection window service
    * @param courseValidationServiceBean course validation service
    */
@@ -78,14 +74,12 @@ public class SelectionService {
       final CourseService courseServiceBean,
       final StudentService studentServiceBean,
       final SessionService sessionServiceBean,
-      final NotificationService notificationServiceBean,
       final SelectionWindowService selectionWindowServiceBean,
       final CourseValidationService courseValidationServiceBean) {
     this.selectionMapper = selectionMapperBean;
     this.courseService = courseServiceBean;
     this.studentService = studentServiceBean;
     this.sessionService = sessionServiceBean;
-    this.notificationService = notificationServiceBean;
     this.selectionWindowService = selectionWindowServiceBean;
     this.courseValidationService = courseValidationServiceBean;
   }
@@ -162,12 +156,7 @@ public class SelectionService {
         current.getRole() == Role.ADMIN && record.getScore() != null);
     insert.setCreateTime(LocalDateTime.now());
     selectionMapper.insert(insert);
-    SelectionRecord created = selectionMapper.selectJoinedById(id);
-    notificationService.notifySelectionCreated(
-        created.getStudentId(),
-        created.getCourseName(),
-        created.getTimeSlot());
-    return created;
+    return selectionMapper.selectJoinedById(id);
   }
 
   /**
@@ -196,9 +185,7 @@ public class SelectionService {
       update.setScore(record.getScore());
       update.setGraded(record.getScore() != null);
       selectionMapper.updateById(update);
-      SelectionRecord refreshed = selectionMapper.selectJoinedById(id);
-      notifyGradeIfPublished(existed, refreshed);
-      return refreshed;
+      return selectionMapper.selectJoinedById(id);
     }
 
     Course course =
@@ -214,9 +201,7 @@ public class SelectionService {
     update.setScore(record.getScore());
     update.setGraded(record.getScore() != null);
     selectionMapper.updateById(update);
-    SelectionRecord refreshed = selectionMapper.selectJoinedById(id);
-    notifyGradeIfPublished(existed, refreshed);
-    return refreshed;
+    return selectionMapper.selectJoinedById(id);
   }
 
   /**
@@ -237,9 +222,6 @@ public class SelectionService {
       throw new AppException(HttpStatus.FORBIDDEN, "只能退选自己的课程");
     }
     selectionMapper.deleteById(id);
-    notificationService.notifySelectionDropped(
-        existed.getStudentId(),
-        existed.getCourseName());
   }
 
   /**
@@ -447,23 +429,6 @@ public class SelectionService {
                         * courseCreditOrZero(item))
             .sum();
     return round(gpaSum / gpaCredits);
-  }
-
-  private void notifyGradeIfPublished(
-      final SelectionRecord before,
-      final SelectionRecord after) {
-    if (after == null || !isGraded(after)) {
-      return;
-    }
-    if (before != null
-        && Objects.equals(before.getGraded(), after.getGraded())
-        && Objects.equals(before.getScore(), after.getScore())) {
-      return;
-    }
-    notificationService.notifyGradePublished(
-        after.getStudentId(),
-        after.getCourseName(),
-        after.getScore());
   }
 
   private boolean contains(final String source, final String keyword) {

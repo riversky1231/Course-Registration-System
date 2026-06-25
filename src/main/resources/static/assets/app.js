@@ -1,11 +1,4 @@
 const VIEW_META = {
-  dashboard: {
-    key: "dashboard",
-    label: "学期总览",
-    caption: "首页概览",
-    description: "查看当前学期的课程、人员、成绩与选课运行情况。",
-    searchPlaceholder: "",
-  },
   profile: {
     key: "profile",
     label: "个人资料",
@@ -78,80 +71,93 @@ const VIEW_META = {
   },
 };
 
+const VIEW_ICONS = {
+  profile: "User",
+  gradeReport: "TrophyBase",
+  admins: "Avatar",
+  auditLogs: "Document",
+  notifications: "Bell",
+  teachers: "Reading",
+  students: "UserFilled",
+  courses: "Notebook",
+  selections: "Tickets",
+  selectionWindows: "Clock",
+};
+
 const TABLE_COLUMNS = {
   gradeReport: [
-    { key: "courseName", label: "课程" },
-    { key: "teacherName", label: "授课教师" },
-    { key: "courseDept", label: "开课学院" },
-    { key: "courseCredit", label: "学分" },
-    { key: "timeSlot", label: "上课时间" },
-    { key: "score", label: "成绩" },
+    { key: "courseName", label: "课程", minWidth: 160 },
+    { key: "teacherName", label: "授课教师", minWidth: 120 },
+    { key: "courseDept", label: "开课学院", minWidth: 140 },
+    { key: "courseCredit", label: "学分", width: 110 },
+    { key: "timeSlot", label: "上课时间", minWidth: 140 },
+    { key: "score", label: "成绩", width: 120 },
   ],
   admins: [
-    { key: "username", label: "账号" },
-    { key: "name", label: "姓名" },
-    { key: "tele", label: "电话" },
+    { key: "username", label: "账号", minWidth: 140 },
+    { key: "name", label: "姓名", minWidth: 120 },
+    { key: "tele", label: "电话", minWidth: 140 },
   ],
   auditLogs: [
-    { key: "adminUsername", label: "操作管理员" },
-    { key: "action", label: "操作" },
-    { key: "targetType", label: "对象类型" },
-    { key: "targetName", label: "对象名称" },
-    { key: "detail", label: "详情" },
-    { key: "createTime", label: "时间" },
+    { key: "adminUsername", label: "操作管理员", minWidth: 130 },
+    { key: "action", label: "操作", width: 110 },
+    { key: "targetType", label: "对象类型", width: 120 },
+    { key: "targetName", label: "对象名称", minWidth: 140 },
+    { key: "detail", label: "详情", minWidth: 200 },
+    { key: "createTime", label: "时间", minWidth: 170 },
   ],
   notifications: [
-    { key: "recipientName", label: "接收人" },
-    { key: "channel", label: "渠道" },
-    { key: "status", label: "状态" },
-    { key: "title", label: "标题" },
-    { key: "resultMessage", label: "结果" },
-    { key: "createTime", label: "创建时间" },
+    { key: "recipientName", label: "接收人", minWidth: 120 },
+    { key: "channel", label: "渠道", width: 100 },
+    { key: "status", label: "状态", width: 110 },
+    { key: "title", label: "标题", minWidth: 160 },
+    { key: "resultMessage", label: "结果", minWidth: 160 },
+    { key: "createTime", label: "创建时间", minWidth: 170 },
   ],
   teachers: [
-    { key: "username", label: "账号" },
-    { key: "numb", label: "教工号" },
-    { key: "tname", label: "姓名" },
-    { key: "tposition", label: "职位" },
-    { key: "ttel", label: "电话" },
-    { key: "gender", label: "性别" },
+    { key: "username", label: "账号", minWidth: 120 },
+    { key: "numb", label: "教工号", minWidth: 120 },
+    { key: "tname", label: "姓名", minWidth: 110 },
+    { key: "tposition", label: "职位", minWidth: 120 },
+    { key: "ttel", label: "电话", minWidth: 130 },
+    { key: "gender", label: "性别", width: 90 },
   ],
   students: [
-    { key: "username", label: "账号" },
-    { key: "numb", label: "学号" },
-    { key: "sname", label: "姓名" },
-    { key: "sdept", label: "学院" },
-    { key: "smajor", label: "专业" },
-    { key: "sclass", label: "班级" },
+    { key: "username", label: "账号", minWidth: 120 },
+    { key: "numb", label: "学号", minWidth: 120 },
+    { key: "sname", label: "姓名", minWidth: 110 },
+    { key: "sdept", label: "学院", minWidth: 130 },
+    { key: "smajor", label: "专业", minWidth: 130 },
+    { key: "sclass", label: "班级", minWidth: 110 },
   ],
   courses: [
-    { key: "name", label: "课程名称" },
-    { key: "numb", label: "课程编号" },
-    { key: "dept", label: "开课学院" },
-    { key: "teacherName", label: "授课教师" },
-    { key: "score", label: "学分" },
-    { key: "maxStudents", label: "容量" },
-    { key: "timeSlot", label: "上课时间" },
-    { key: "jianjie", label: "课程简介" },
+    { key: "name", label: "课程名称", minWidth: 150 },
+    { key: "numb", label: "课程编号", minWidth: 120 },
+    { key: "dept", label: "开课学院", minWidth: 130 },
+    { key: "teacherName", label: "授课教师", minWidth: 120 },
+    { key: "score", label: "学分", width: 110 },
+    { key: "maxStudents", label: "容量", width: 100 },
+    { key: "timeSlot", label: "上课时间", minWidth: 140 },
+    { key: "jianjie", label: "课程简介", minWidth: 200 },
   ],
   selections: [
-    { key: "courseName", label: "课程" },
-    { key: "courseDept", label: "开课学院" },
-    { key: "courseCredit", label: "学分" },
-    { key: "timeSlot", label: "上课时间" },
-    { key: "studentName", label: "学生" },
-    { key: "teacherName", label: "教师" },
-    { key: "score", label: "成绩" },
-    { key: "createTime", label: "选课时间" },
+    { key: "courseName", label: "课程", minWidth: 150 },
+    { key: "courseDept", label: "开课学院", minWidth: 130 },
+    { key: "courseCredit", label: "学分", width: 100 },
+    { key: "timeSlot", label: "上课时间", minWidth: 140 },
+    { key: "studentName", label: "学生", minWidth: 110 },
+    { key: "teacherName", label: "教师", minWidth: 110 },
+    { key: "score", label: "成绩", width: 120 },
+    { key: "createTime", label: "选课时间", minWidth: 170 },
   ],
   selectionWindows: [
-    { key: "actionType", label: "类型" },
-    { key: "name", label: "窗口名称" },
-    { key: "startTime", label: "开始时间" },
-    { key: "endTime", label: "结束时间" },
-    { key: "enabled", label: "启用状态" },
-    { key: "active", label: "当前状态" },
-    { key: "description", label: "说明" },
+    { key: "actionType", label: "类型", width: 120 },
+    { key: "name", label: "窗口名称", minWidth: 150 },
+    { key: "startTime", label: "开始时间", minWidth: 170 },
+    { key: "endTime", label: "结束时间", minWidth: 170 },
+    { key: "enabled", label: "启用状态", width: 110 },
+    { key: "active", label: "当前状态", width: 110 },
+    { key: "description", label: "说明", minWidth: 180 },
   ],
 };
 
@@ -194,6 +200,12 @@ const AUTH_RULES = {
 };
 
 const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const http = axios.create({
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
 
 function getViewsForRole(role) {
   if (role === "admin") {
@@ -473,7 +485,7 @@ function createEmptyModal(view) {
   };
 }
 
-createApp({
+const AppComponent = {
   setup() {
     const booting = ref(true);
     const pending = ref(false);
@@ -538,12 +550,6 @@ createApp({
         text: "",
       },
     });
-    const message = reactive({
-      type: "info",
-      text: "",
-    });
-
-    let messageTimer = null;
 
     const roleLabel = computed(() => ROLE_LABELS[session.value?.role] || "校园工作台");
 
@@ -613,97 +619,18 @@ createApp({
       };
     });
 
-    const overviewCards = computed(() =>
-      availableViews.value
-        .filter(
-          (item) =>
-            !["dashboard", "profile", "gradeReport"].includes(item.key)
-            && Object.prototype.hasOwnProperty.call(summary, item.key)
-        )
-        .map((item) => ({
-          key: item.key,
-          label: item.label,
-          value: summary[item.key] ?? 0,
-          hint: SUMMARY_HINTS[item.key] || item.description,
-        }))
-    );
+    const summaryChips = computed(() => [
+      { label: "课程", value: summary.courses ?? 0, icon: "Notebook" },
+      { label: "选课", value: summary.selections ?? 0, icon: "Tickets" },
+      { label: "待录成绩", value: insights.pendingGrades ?? 0, icon: "EditPen" },
+    ]);
 
-    const dashboardHero = computed(() => {
-      if (!session.value) {
-        return {
-          title: "",
-          description: "",
-          focusLabel: "",
-          scopeLabel: "",
-          primaryView: "courses",
-          primaryLabel: "查看课程",
-          secondaryView: "profile",
-          secondaryLabel: "个人资料",
-        };
-      }
-      if (session.value.role === "admin") {
-        return {
-          title: "把课程、人员与选课运行收拢到一个总控台。",
-          description: "从课程排布、开放窗口到通知与审计记录，当前学期的关键状态都集中在这里。",
-          focusLabel: "总控视角",
-          scopeLabel: `${summary.courses} 门课程 · ${summary.selections} 条选课`,
-          primaryView: "courses",
-          primaryLabel: "进入课程中心",
-          secondaryView: "students",
-          secondaryLabel: "查看学生档案",
-        };
-      }
-      if (session.value.role === "teacher") {
-        return {
-          title: "围绕你负责的课程、学生与成绩做连续处理。",
-          description: "重点查看待录成绩、课程容量和学生分布，减少在多个页面之间来回切换。",
-          focusLabel: "教学视角",
-          scopeLabel: `${summary.courses} 门课程 · ${insights.pendingGrades} 条待录成绩`,
-          primaryView: "selections",
-          primaryLabel: "录入课程成绩",
-          secondaryView: "courses",
-          secondaryLabel: "维护我的课程",
-        };
-      }
-      return {
-        title: "用一张学期航图管理课程、成绩与个人资料。",
-        description: "从浏览课程到查看 GPA，再到维护个人档案，当前学期的重要信息会在首页形成连续视图。",
-        focusLabel: "学生视角",
-        scopeLabel: `${summary.selections} 门已选课程 · GPA ${formatNumber(gradeReport.gpa)}`,
-        primaryView: "courses",
-        primaryLabel: "浏览课程中心",
-        secondaryView: "selections",
-        secondaryLabel: "查看我的选课",
-      };
-    });
-
-    const dashboardMetrics = computed(() => {
-      if (!session.value) {
-        return [];
-      }
-      if (session.value.role === "admin") {
-        return [
-          { key: "courses", label: "课程总量", value: summary.courses, hint: "当前课程池中的开课数量" },
-          { key: "selections", label: "选课记录", value: summary.selections, hint: "系统已生成的选课数据量" },
-          { key: "pendingGrades", label: "待录成绩", value: insights.pendingGrades, hint: "需要教师继续补录的课程成绩" },
-          { key: "unassignedCourses", label: "未排教师", value: insights.unassignedCourses, hint: "尚未完成教师分配的课程" },
-        ];
-      }
-      if (session.value.role === "teacher") {
-        return [
-          { key: "courses", label: "我的课程", value: summary.courses, hint: "当前由你负责的课程数量" },
-          { key: "selections", label: "相关选课", value: summary.selections, hint: "与你课程关联的学生选课记录" },
-          { key: "pendingGrades", label: "待录成绩", value: insights.pendingGrades, hint: "等待你录入成绩的课程记录" },
-          { key: "averageScore", label: "平均成绩", value: formatNumber(insights.averageScore), hint: "基于当前可见记录统计" },
-        ];
-      }
-      return [
-        { key: "gpa", label: "GPA", value: formatNumber(gradeReport.gpa), hint: "按已出成绩课程加权计算" },
-        { key: "selections", label: "已选课程", value: summary.selections, hint: "与你本人关联的选课记录" },
-        { key: "earnedCredits", label: "已获学分", value: formatNumber(gradeReport.earnedCredits), hint: "已通过课程累计学分" },
-        { key: "pendingGrades", label: "待出成绩", value: gradeReport.pendingCourses, hint: "教师尚未录入成绩的课程数" },
-      ];
-    });
+    const gradeOverviewCards = computed(() => [
+      { label: "GPA", value: formatNumber(gradeReport.gpa), hint: "已出成绩课程的加权绩点", icon: "TrophyBase", accent: "violet" },
+      { label: "平均成绩", value: formatNumber(gradeReport.averageScore), hint: "已出成绩课程的平均分", icon: "DataLine", accent: "blue" },
+      { label: "已获学分", value: formatNumber(gradeReport.earnedCredits), hint: "成绩达到及格线的累计学分", icon: "Medal", accent: "green" },
+      { label: "总学分", value: formatNumber(gradeReport.totalCredits), hint: "已选课程累计学分", icon: "Collection", accent: "amber" },
+    ]);
 
     const moduleActionLabel = computed(() => {
       if (currentView.value === "admins") return "新增管理员";
@@ -763,15 +690,17 @@ createApp({
       return `${verb}${currentMeta.value.label}`;
     });
 
+    const userInitial = computed(() => {
+      const name = session.value?.displayName || roleLabel.value || "U";
+      return String(name).slice(0, 1).toUpperCase();
+    });
+
     function setMessage(type, text) {
-      message.type = type;
-      message.text = text;
-      if (messageTimer) {
-        clearTimeout(messageTimer);
+      if (!text) {
+        return;
       }
-      messageTimer = setTimeout(() => {
-        message.text = "";
-      }, 3200);
+      const normalized = type === "error" ? "error" : type === "success" ? "success" : type === "warning" ? "warning" : "info";
+      ElMessage({ type: normalized, message: text, showClose: true, duration: 3200 });
     }
 
     function setModalFeedback(type, text) {
@@ -783,6 +712,10 @@ createApp({
       setModalFeedback("info", "");
     }
 
+    function iconFor(viewKey) {
+      return VIEW_ICONS[viewKey] || "Menu";
+    }
+
     function getCookie(name) {
       const match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]+)"));
       return match ? decodeURIComponent(match[2]) : null;
@@ -790,36 +723,39 @@ createApp({
 
     async function api(url, options = {}) {
       const csrfToken = getCookie("XSRF-TOKEN");
-      const config = {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
-          ...(options.headers || {}),
-        },
-        ...options,
-      };
+      const method = (options.method || "GET").toUpperCase();
+      let data;
+      if (options.body !== undefined) {
+        data = typeof options.body === "string" ? JSON.parse(options.body) : options.body;
+      } else if (options.data !== undefined) {
+        data = options.data;
+      }
 
-      const response = await fetch(url, config);
-      let payload = null;
       try {
-        payload = await response.json();
-      } catch (error) {
-        payload = null;
-      }
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          session.value = null;
+        const response = await http.request({
+          url,
+          method,
+          data,
+          headers: {
+            ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
+            ...(options.headers || {}),
+          },
+        });
+        const payload = response.data;
+        if (payload && payload.success === false) {
+          throw new Error(payload.message || "请求失败");
         }
-        throw new Error(payload?.message || `请求失败(${response.status})`);
+        return payload ? payload.data : null;
+      } catch (error) {
+        if (error.response) {
+          if (error.response.status === 401) {
+            session.value = null;
+          }
+          const payload = error.response.data;
+          throw new Error(payload?.message || `请求失败(${error.response.status})`);
+        }
+        throw error;
       }
-
-      if (payload && payload.success === false) {
-        throw new Error(payload.message || "请求失败");
-      }
-
-      return payload ? payload.data : null;
     }
 
     function canCreate(view) {
@@ -989,6 +925,16 @@ createApp({
       return value;
     }
 
+    function tagType(key, row) {
+      const cls = cellClass(key, row[key], row);
+      if (!cls) {
+        return false;
+      }
+      if (cls.includes("is-success")) return "success";
+      if (cls.includes("is-warn")) return "warning";
+      return "info";
+    }
+
     function cellClass(key, value, row = null) {
       if (key === "score") {
         if (currentView.value === "courses") {
@@ -1093,14 +1039,6 @@ createApp({
       references.courses = courses?.items || [];
     }
 
-    async function loadDashboardData() {
-      const jobs = [loadSummary(), loadInsights(), loadReferences()];
-      if (session.value?.role === "student") {
-        jobs.push(loadGradeReport());
-      }
-      await Promise.all(jobs);
-    }
-
     function resolveCurrentView(role) {
       const storedView = readStoredView();
       const allowedViews = getViewsForRole(role);
@@ -1116,8 +1054,7 @@ createApp({
         jobs.push(loadGradeReport());
       }
       if (
-        currentView.value !== "dashboard"
-        && currentView.value !== "profile"
+        currentView.value !== "profile"
         && currentView.value !== "gradeReport"
         && ENDPOINTS[currentView.value]
       ) {
@@ -1164,9 +1101,7 @@ createApp({
     async function refreshCurrent() {
       try {
         pending.value = true;
-        if (currentView.value === "dashboard") {
-          await loadDashboardData();
-        } else if (currentView.value === "profile") {
+        if (currentView.value === "profile") {
           await loadProfile();
         } else if (currentView.value === "gradeReport") {
           await Promise.all([loadGradeReport(), loadSummary()]);
@@ -1282,20 +1217,20 @@ createApp({
     }
 
     function openCreate() {
-      modal.visible = true;
       modal.mode = "create";
       modal.form = createEmptyModal(currentView.value);
       clearModalFeedback();
       if (currentView.value === "courses" && session.value?.role === "teacher") {
         modal.form.tid = session.value.id;
       }
+      modal.visible = true;
     }
 
     function openEdit(row) {
-      modal.visible = true;
       modal.mode = "edit";
       modal.form = prepareModalForm(currentView.value, row);
       clearModalFeedback();
+      modal.visible = true;
     }
 
     function closeModal() {
@@ -1343,7 +1278,17 @@ createApp({
     }
 
     async function removeRow(row) {
-      if (!window.confirm(`确认${deleteActionLabel.value}当前记录吗？`)) {
+      try {
+        await ElMessageBox.confirm(
+          `确认${deleteActionLabel.value}当前记录吗？此操作不可撤销。`,
+          `${deleteActionLabel.value}确认`,
+          {
+            type: "warning",
+            confirmButtonText: deleteActionLabel.value,
+            cancelButtonText: "取消",
+          }
+        );
+      } catch (error) {
         return;
       }
       try {
@@ -1394,17 +1339,26 @@ createApp({
       await refreshCurrent();
     }
 
-    async function goToPage(page) {
+    function resetCourseFilters() {
+      courseFilters.dept = "";
+      courseFilters.teacherId = "";
+      courseFilters.minScore = "";
+      courseFilters.maxScore = "";
+      courseFilters.onlyAvailable = false;
+      applyModuleFilters();
+    }
+
+    async function handlePageChange(page) {
       const pager = currentView.value === "gradeReport" ? pages.gradeReport : pages[currentView.value];
-      if (!pager || page < 1 || page === pager.page || (pager.totalPages && page > pager.totalPages)) {
+      if (!pager || page < 1 || page === pager.page) {
         return;
       }
       pager.page = page;
       await refreshCurrent();
     }
 
-    async function changePageSize(event) {
-      const nextSize = Number(event.target.value);
+    async function handleSizeChange(size) {
+      const nextSize = Number(size);
       const pager = currentView.value === "gradeReport" ? pages.gradeReport : pages[currentView.value];
       if (!pager || !nextSize || nextSize === pager.pageSize) {
         return;
@@ -1432,7 +1386,6 @@ createApp({
       references,
       courseFilters,
       modal,
-      message,
       authRules: AUTH_RULES,
       semesterLabel: SEMESTER_LABEL,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
@@ -1451,16 +1404,18 @@ createApp({
       canEditRow,
       canDeleteRow,
       showRowActions,
-      overviewCards,
-      dashboardHero,
-      dashboardMetrics,
+      summaryChips,
+      gradeOverviewCards,
       moduleActionLabel,
       editActionLabel,
       deleteActionLabel,
       profileSummaryItems,
       modalTitle,
+      userInitial,
+      iconFor,
       renderCell,
       cellClass,
+      tagType,
       formatDateTime,
       viewMetric,
       login,
@@ -1469,8 +1424,9 @@ createApp({
       changeView,
       refreshCurrent,
       applyModuleFilters,
-      goToPage,
-      changePageSize,
+      resetCourseFilters,
+      handlePageChange,
+      handleSizeChange,
       openCreate,
       openEdit,
       closeModal,
@@ -1480,4 +1436,11 @@ createApp({
       saveProfile,
     };
   },
-}).mount("#app");
+};
+
+const app = createApp(AppComponent);
+app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+for (const [name, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(name, component);
+}
+app.mount("#app");

@@ -24,17 +24,14 @@ public class TeacherService {
   private final TeacherMapper teacherMapper;
   private final SessionService sessionService;
   private final PasswordService passwordService;
-  private final AdminAuditLogService adminAuditLogService;
 
   public TeacherService(
       TeacherMapper teacherMapper,
       SessionService sessionService,
-      PasswordService passwordService,
-      AdminAuditLogService adminAuditLogService) {
+      PasswordService passwordService) {
     this.teacherMapper = teacherMapper;
     this.sessionService = sessionService;
     this.passwordService = passwordService;
-    this.adminAuditLogService = adminAuditLogService;
   }
 
   public PageResult<Teacher> list(
@@ -71,43 +68,32 @@ public class TeacherService {
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Teacher create(Teacher teacher, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(teacher.getPassword());
     ensureUsernameAvailable(teacher.getUsername(), null);
     teacher.setId(IdGenerator.newId());
     teacher.setPassword(passwordService.encode(teacher.getPassword()));
     teacherMapper.insert(teacher);
-    adminAuditLogService.record(
-        current, "新增", "教师", teacher.getId(), displayName(teacher), "账号：" + teacher.getUsername());
     return teacherMapper.selectById(teacher.getId());
   }
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Teacher update(String id, Teacher teacher, HttpSession session) {
-    UserSession actor = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     Teacher target = require(id);
     String nextUsername = defaultValue(teacher.getUsername(), target.getUsername());
     CredentialRules.requirePasswordIfProvided(teacher.getPassword());
     ensureUsernameAvailable(nextUsername, target.getId());
     mergeTeacher(target, teacher);
     teacherMapper.updateById(target);
-    adminAuditLogService.record(
-        actor,
-        "编辑",
-        "教师",
-        target.getId(),
-        displayName(target),
-        "账号：" + target.getUsername() + "，教工号：" + defaultValue(target.getNumb(), "-"));
     return teacherMapper.selectById(id);
   }
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(String id, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    Teacher target = require(id);
+    sessionService.requireRole(session, Role.ADMIN);
+    require(id);
     teacherMapper.deleteById(id);
-    adminAuditLogService.record(
-        current, "删除", "教师", target.getId(), displayName(target), "账号：" + target.getUsername());
   }
 
   public Teacher getProfile(HttpSession session) {
@@ -168,9 +154,5 @@ public class TeacherService {
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "教师账号已存在");
     }
-  }
-
-  private String displayName(Teacher teacher) {
-    return StringUtils.hasText(teacher.getTname()) ? teacher.getTname() : teacher.getUsername();
   }
 }
