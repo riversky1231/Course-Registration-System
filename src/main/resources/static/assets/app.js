@@ -783,11 +783,18 @@ createApp({
       setModalFeedback("info", "");
     }
 
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]+)"));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+
     async function api(url, options = {}) {
+      const csrfToken = getCookie("XSRF-TOKEN");
       const config = {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
           ...(options.headers || {}),
         },
         ...options,
