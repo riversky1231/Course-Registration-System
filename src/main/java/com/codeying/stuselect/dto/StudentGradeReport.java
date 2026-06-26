@@ -10,4 +10,5 @@ public record StudentGradeReport(
     double totalCredits,
     long gradedCourses,
     long pendingCourses,
+    long failedCourses,
     PageResult<SelectionRecord> page) {}

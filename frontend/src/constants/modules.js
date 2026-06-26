@@ -128,7 +128,6 @@ export function getViewsForRole(role) {
   if (role === "admin") {
     return [
       "dashboard",
-      "assistant",
       "profile",
       "admins",
       "teachers",
@@ -148,7 +147,6 @@ export function getViewsForRole(role) {
       "assistant",
       "profile",
       "gradeReport",
-      "teachers",
       "courses",
       "selections",
     ].map((key) => VIEW_META[key]);

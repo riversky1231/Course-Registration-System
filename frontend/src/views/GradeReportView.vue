@@ -3,6 +3,18 @@
     <PageHeader :title="meta.label" :caption="meta.caption" :description="meta.description" />
 
     <div class="grade-top">
+      <!-- 挂科预警 -->
+      <el-alert
+        v-if="report.failedCourses > 0"
+        type="error"
+        :closable="false"
+        show-icon
+        class="fail-alert"
+      >
+        <template #title>挂科预警</template>
+        你有 <strong>{{ report.failedCourses }}</strong> 门课程成绩低于 60 分，请及时关注相关课程的重修安排。
+      </el-alert>
+
       <!-- GPA 仪表盘 -->
       <el-card class="panel gpa-card" shadow="never">
         <p class="eyebrow">学业绩点</p>
@@ -53,6 +65,7 @@
             <el-space>
               <el-tag type="success" effect="light" round>已出 {{ report.gradedCourses }} 门</el-tag>
               <el-tag type="warning" effect="light" round>待出 {{ report.pendingCourses }} 门</el-tag>
+              <el-tag v-if="report.failedCourses > 0" type="danger" effect="light" round>挂科 {{ report.failedCourses }} 门</el-tag>
             </el-space>
           </div>
         </div>
@@ -108,7 +121,7 @@ const pageSizeOptions = PAGE_SIZE_OPTIONS;
 
 const loading = ref(false);
 const keyword = ref("");
-const report = reactive({ gpa: 0, averageScore: 0, earnedCredits: 0, totalCredits: 0, gradedCourses: 0, pendingCourses: 0 });
+const report = reactive({ gpa: 0, averageScore: 0, earnedCredits: 0, totalCredits: 0, gradedCourses: 0, pendingCourses: 0, failedCourses: 0 });
 const pager = reactive(emptyPage());
 const rows = ref([]);
 
@@ -147,6 +160,7 @@ async function load() {
       totalCredits: data?.totalCredits ?? 0,
       gradedCourses: data?.gradedCourses ?? 0,
       pendingCourses: data?.pendingCourses ?? 0,
+      failedCourses: data?.failedCourses ?? 0,
     });
     const page = data?.page || emptyPage();
     rows.value = page.items || [];
@@ -182,6 +196,8 @@ onMounted(load);
 
 <style scoped>
 .grade-top { display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-bottom: 20px; align-items: stretch; }
+
+.fail-alert { grid-column: 1 / -1; }
 
 .gpa-card { text-align: center; }
 .gpa-card :deep(.el-card__body) { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px; }

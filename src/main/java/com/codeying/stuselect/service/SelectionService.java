@@ -323,6 +323,8 @@ public class SelectionService {
                 .sum());
     long gradedCourses = all.stream().filter(this::isGraded).count();
     long pendingCourses = all.size() - gradedCourses;
+    long failedCourses =
+        all.stream().filter(this::isFailed).count();
     double averageScore =
         round(
             all.stream()
@@ -358,6 +360,7 @@ public class SelectionService {
         totalCredits,
         gradedCourses,
         pendingCourses,
+        failedCourses,
         PageResult.of(filtered, PageQuery.of(page, pageSize)));
   }
 
@@ -476,6 +479,12 @@ public class SelectionService {
     return isGraded(record)
         && record.getScore() != null
         && record.getScore() >= PASSING_SCORE;
+  }
+
+  private boolean isFailed(final SelectionRecord record) {
+    return isGraded(record)
+        && record.getScore() != null
+        && record.getScore() < PASSING_SCORE;
   }
 
   private double toGpa(final Double score) {

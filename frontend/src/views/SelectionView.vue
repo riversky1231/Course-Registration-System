@@ -73,14 +73,6 @@
           <el-table-column label="选课时间" min-width="170">
             <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
           </el-table-column>
-          <el-table-column label="操作" fixed="right" width="160" align="center">
-            <template #default="{ row }">
-              <el-button v-if="allowEdit" type="primary" link :icon="'EditPen'" @click="mod.openEdit(row)">
-                {{ auth.role === "teacher" ? "录入成绩" : "编辑" }}
-              </el-button>
-              <el-button v-if="allowDelete" type="danger" link :icon="'Delete'" @click="mod.remove(row, '删除')">删除</el-button>
-            </template>
-          </el-table-column>
         </el-table>
       </template>
 

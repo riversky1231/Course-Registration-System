@@ -122,11 +122,6 @@ const greeting = computed(() => {
   return "晚上好";
 });
 
-const heroDesc = computed(() => {
-  if (auth.role === "admin") return "课程、人员、选课与审计运行状态已为你汇总，掌握全局只需一屏。";
-  if (auth.role === "teacher") return "聚焦你负责的课程、学生与成绩录入，减少在多个页面之间来回切换。";
-  return "浏览课程、跟踪选课、查看 GPA 与成绩，本学期的关键信息一目了然。";
-});
 
 const primaryAction = computed(() => {
   if (auth.role === "admin") return { label: "进入课程中心", route: "/courses", icon: "Notebook" };

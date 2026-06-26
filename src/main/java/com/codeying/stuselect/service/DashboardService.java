@@ -113,7 +113,7 @@ public class DashboardService {
             .toList(),
         buildCourseSpotlights(courses, selections),
         buildPeopleSpotlights(current.getRole(), courses, selections, students),
-        buildDepartmentSpotlights(students),
+        buildDepartmentSpotlights(courses),
         buildNotices(current, courses.size(), selections.size(), pendingGrades, unassignedCourses));
   }
 
@@ -214,29 +214,28 @@ public class DashboardService {
         .toList();
   }
 
-  private List<DashboardInsights.InsightCard> buildDepartmentSpotlights(List<Student> students) {
-    return students.stream()
-        .collect(Collectors.groupingBy(student -> nullSafe(student.getSdept(), "未分配学院")))
+  private List<DashboardInsights.InsightCard> buildDepartmentSpotlights(List<Course> courses) {
+    return courses.stream()
+        .collect(Collectors.groupingBy(course -> nullSafe(course.getDept(), "未设学院")))
         .entrySet()
         .stream()
-        .sorted(Comparator.<Map.Entry<String, List<Student>>>comparingInt(entry -> entry.getValue().size()).reversed())
+        .sorted(Comparator.<Map.Entry<String, List<Course>>>comparingInt(entry -> entry.getValue().size()).reversed())
         .limit(6)
         .map(
             entry -> {
-              List<Student> members = entry.getValue();
-              String majors =
-                  members.stream()
-                      .map(Student::getSmajor)
+              List<Course> deptCourses = entry.getValue();
+              String sample =
+                  deptCourses.stream()
+                      .map(Course::getName)
                       .filter(Objects::nonNull)
                       .filter(value -> !value.isBlank())
-                      .distinct()
                       .limit(2)
                       .collect(Collectors.joining(" / "));
               return new DashboardInsights.InsightCard(
                   entry.getKey(),
-                  "学院分布",
-                  members.size() + " 人",
-                  majors.isBlank() ? "暂无专业信息" : "重点专业 " + majors);
+                  "开课学院",
+                  deptCourses.size() + " 门课程",
+                  sample.isBlank() ? "暂无课程信息" : "代表课程 " + sample);
             })
         .toList();
   }

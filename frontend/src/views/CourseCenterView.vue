@@ -135,11 +135,35 @@
           <el-table-column prop="studentDept" label="学院" min-width="130" show-overflow-tooltip />
           <el-table-column prop="studentMajor" label="专业" min-width="130" show-overflow-tooltip />
           <el-table-column prop="studentClass" label="班级" min-width="100" />
-          <el-table-column label="成绩" width="100">
+          <el-table-column label="成绩" width="180">
             <template #default="{ row }">
-              <el-tag :type="row.graded ? 'success' : 'warning'" effect="light" round size="small">
-                {{ row.graded ? formatNumber(row.score) + " 分" : "待录入" }}
-              </el-tag>
+              <div class="grade-cell">
+                <el-input-number
+                  v-if="editingGradeId === row.id"
+                  v-model="gradeInputValue"
+                  :min="0"
+                  :max="100"
+                  :step="0.5"
+                  size="small"
+                  controls-position="right"
+                  class="grade-input"
+                  @keyup.enter="saveGrade(row)"
+                />
+                <el-tag v-else :type="row.graded ? 'success' : 'warning'" effect="light" round size="small">
+                  {{ row.graded ? formatNumber(row.score) + " 分" : "待录入" }}
+                </el-tag>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" align="center">
+            <template #default="{ row }">
+              <template v-if="editingGradeId === row.id">
+                <el-button type="primary" link size="small" :icon="'Check'" @click="saveGrade(row)" />
+                <el-button type="info" link size="small" :icon="'Close'" @click="cancelGradeEdit" />
+              </template>
+              <el-button v-else type="primary" link size="small" :icon="'EditPen'" @click="startGradeEdit(row)">
+                {{ row.graded ? "修改成绩" : "录入成绩" }}
+              </el-button>
             </template>
           </el-table-column>
           <el-table-column label="选课时间" min-width="160">
@@ -159,9 +183,9 @@ import RecordDialog from "@/components/RecordDialog.vue";
 import { useModule } from "@/composables/useModule";
 import { useAuthStore } from "@/stores/auth";
 import { useReferenceStore } from "@/stores/reference";
-import { createModule, getCourseStudents } from "@/api";
+import { createModule, getCourseStudents, updateModule } from "@/api";
 import { ENDPOINTS, VIEW_META, PAGE_SIZE_OPTIONS, canCreate, canEdit, canDelete } from "@/constants/modules";
-import { formatNumber, formatDateTime, safeText } from "@/utils/format";
+import { formatNumber, formatDateTime, safeText, normalizeOptionalNumber } from "@/utils/format";
 
 const auth = useAuthStore();
 const references = useReferenceStore();
@@ -178,6 +202,8 @@ const studentDialog = reactive({
   students: [],
   rawStudents: [],
 });
+const editingGradeId = ref("");
+const gradeInputValue = ref(null);
 
 const allowCreate = computed(() => canCreate(auth.role, "courses"));
 const allowEdit = computed(() => canEdit(auth.role, "courses"));
@@ -301,6 +327,30 @@ function applyStudentSort() {
   studentDialog.students = list;
 }
 
+function startGradeEdit(row) {
+  editingGradeId.value = row.id;
+  gradeInputValue.value = row.score;
+}
+
+function cancelGradeEdit() {
+  editingGradeId.value = "";
+  gradeInputValue.value = null;
+}
+
+async function saveGrade(row) {
+  const score = normalizeOptionalNumber(gradeInputValue.value);
+  try {
+    await updateModule(ENDPOINTS.selections, row.id, { score });
+    row.score = score;
+    row.graded = score != null;
+    ElMessage.success(`已成功更新 ${row.studentName || "该学生"} 的成绩`);
+  } catch (error) {
+    ElMessage.error(error.message || "成绩保存失败");
+    return;
+  }
+  cancelGradeEdit();
+}
+
 onMounted(() => {
   if (auth.role === "teacher") filters.teacherId = auth.session?.id || "";
   mod.load();
@@ -406,4 +456,7 @@ onMounted(() => {
   color: var(--ink-soft);
   white-space: nowrap;
 }
+
+.grade-cell { display: flex; align-items: center; }
+.grade-input { width: 110px; }
 </style>
