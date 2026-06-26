@@ -132,14 +132,13 @@ export function getViewsForRole(role) {
       "profile",
       "admins",
       "teachers",
-      "students",
       "courses",
       "selections",
       "selectionWindows",
     ].map((key) => VIEW_META[key]);
   }
   if (role === "teacher") {
-    return ["dashboard", "assistant", "profile", "students", "courses", "selections"].map(
+    return ["dashboard", "assistant", "profile", "courses", "selections"].map(
       (key) => VIEW_META[key]
     );
   }
@@ -160,7 +159,7 @@ export function getViewsForRole(role) {
 export function canCreate(role, view) {
   if (!role) return false;
   if (role === "admin") {
-    return ["admins", "teachers", "students", "courses", "selections", "selectionWindows"].includes(view);
+    return ["admins", "teachers", "courses", "selections", "selectionWindows"].includes(view);
   }
   if (role === "teacher") {
     return view === "courses";
@@ -171,7 +170,7 @@ export function canCreate(role, view) {
 export function canEdit(role, view) {
   if (!role) return false;
   if (role === "admin") {
-    return ["admins", "teachers", "students", "courses", "selections", "selectionWindows"].includes(view);
+    return ["admins", "teachers", "courses", "selections", "selectionWindows"].includes(view);
   }
   if (role === "teacher") {
     return view === "courses" || view === "selections";
@@ -182,7 +181,7 @@ export function canEdit(role, view) {
 export function canDelete(role, view) {
   if (!role) return false;
   if (role === "admin") {
-    return ["admins", "teachers", "students", "courses", "selections", "selectionWindows"].includes(view);
+    return ["admins", "teachers", "courses", "selections", "selectionWindows"].includes(view);
   }
   if (role === "teacher") {
     return view === "courses";

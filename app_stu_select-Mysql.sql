@@ -156,7 +156,7 @@ name = VALUES(name),
 tele = VALUES(tele);
 
 -- ============ 演示数据：教师 ============
-INSERT INTO tb_teacher (id, username, password, numb, tname, tbirthday, tposition, ttel, age, gender) VALUES
+INSERT INTO tb_teacher (id, usernamhe, password, numb, tname, tbirthday, tposition, ttel, age, gender) VALUES
 ('T2001', 't_zhang', @seed_password_hash, '2024001', '张若琳', '1987-09-12 00:00:00', '教授', '13810010001', 36, '女'),
 ('T2002', 't_li', @seed_password_hash, '2024002', '李振华', '1985-03-21 00:00:00', '副教授', '13810010002', 39, '男'),
 ('T2003', 't_sun', @seed_password_hash, '2024003', '孙启明', '1990-01-16 00:00:00', '讲师', '13810010003', 34, '男')

@@ -35,7 +35,7 @@
     <div class="dash-columns">
       <!-- 左列 -->
       <div class="page-stack">
-        <el-card v-if="departmentSpotlights.length" class="panel" shadow="never">
+        <el-card v-if="departmentSpotlights.length && auth.role === 'admin'" class="panel" shadow="never">
           <template #header>
             <div class="panel-head">
               <div><p class="eyebrow">学院分布</p><h3>开课学院概览</h3></div>
@@ -90,56 +90,7 @@
       </div>
 
       <!-- 右列 -->
-      <div class="page-stack">
-        <el-card v-if="notices.length" class="panel notice-panel" shadow="never">
-          <template #header>
-            <div class="panel-head"><div><p class="eyebrow">提醒</p><h3>待办与提示</h3></div><el-icon class="head-glyph"><BellFilled /></el-icon></div>
-          </template>
-          <div class="notice-list">
-            <div v-for="(notice, i) in notices" :key="i" class="notice-item">
-              <el-icon><InfoFilled /></el-icon>
-              <span>{{ notice }}</span>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card v-if="courseSpotlights.length" class="panel" shadow="never">
-          <template #header>
-            <div class="panel-head"><div><p class="eyebrow">课程</p><h3>课程亮点</h3></div><el-icon class="head-glyph"><Notebook /></el-icon></div>
-          </template>
-          <div class="spotlight-list">
-            <div v-for="card in courseSpotlights" :key="card.title" class="spotlight-item">
-              <div class="spotlight-main">
-                <strong>{{ card.title }}</strong>
-                <span>{{ card.subtitle }}</span>
-              </div>
-              <div class="spotlight-metric">
-                <strong>{{ card.metric }}</strong>
-                <small>{{ card.detail }}</small>
-              </div>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card v-if="peopleSpotlights.length" class="panel" shadow="never">
-          <template #header>
-            <div class="panel-head"><div><p class="eyebrow">人员</p><h3>人员亮点</h3></div><el-icon class="head-glyph"><Avatar /></el-icon></div>
-          </template>
-          <div class="spotlight-list">
-            <div v-for="card in peopleSpotlights" :key="card.title" class="spotlight-item">
-              <el-avatar :size="38" class="spot-avatar">{{ (card.title || "?").slice(0, 1) }}</el-avatar>
-              <div class="spotlight-main">
-                <strong>{{ card.title }}</strong>
-                <span>{{ card.subtitle }}</span>
-              </div>
-              <div class="spotlight-metric">
-                <strong>{{ card.metric }}</strong>
-                <small>{{ card.detail }}</small>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </div>
+      <div class="page-stack"></div>
     </div>
   </div>
 </template>
@@ -160,10 +111,7 @@ const loading = ref(false);
 const insights = ref({});
 
 const recentSelections = computed(() => insights.value.recentSelections || []);
-const courseSpotlights = computed(() => insights.value.courseSpotlights || []);
-const peopleSpotlights = computed(() => insights.value.peopleSpotlights || []);
 const departmentSpotlights = computed(() => insights.value.departmentSpotlights || []);
-const notices = computed(() => insights.value.notices || []);
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -312,28 +260,6 @@ onMounted(load);
 .timeline-card strong { font-size: 14px; }
 .timeline-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; color: var(--ink-soft); font-size: 12px; }
 .timeline-meta span { display: inline-flex; align-items: center; gap: 4px; }
-
-.notice-panel { background: linear-gradient(160deg, rgba(91, 91, 240, 0.06), rgba(155, 125, 249, 0.04)); }
-.notice-list { display: grid; gap: 12px; }
-.notice-item { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); }
-.notice-item .el-icon { color: var(--brand); margin-top: 2px; }
-
-.spotlight-list { display: grid; gap: 12px; }
-.spotlight-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bg-2);
-}
-.spot-avatar { background: linear-gradient(140deg, var(--brand), var(--brand-3)); color: #fff; font-weight: 700; flex: none; }
-.spotlight-main { flex: 1; min-width: 0; }
-.spotlight-main strong { display: block; font-size: 14px; }
-.spotlight-main span { font-size: 12px; color: var(--ink-soft); }
-.spotlight-metric { text-align: right; }
-.spotlight-metric strong { display: block; color: var(--brand); font-size: 15px; }
-.spotlight-metric small { font-size: 11px; color: var(--ink-faint); }
 
 @media (max-width: 1100px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

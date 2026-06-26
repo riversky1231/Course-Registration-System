@@ -52,4 +52,10 @@ public class SelectionController {
     selectionService.delete(id, session);
     return ApiResponse.successMessage("删除成功");
   }
+
+  @GetMapping("/course/{courseId}/students")
+  public ApiResponse<java.util.List<SelectionRecord>> listStudentsByCourse(
+      @PathVariable String courseId, HttpSession session) {
+    return ApiResponse.success(selectionService.listStudentsByCourse(courseId, session));
+  }
 }

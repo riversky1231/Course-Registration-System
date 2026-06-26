@@ -79,6 +79,7 @@
             >
               {{ isFull(course) ? "名额已满" : "选这门课" }}
             </el-button>
+            <el-button v-if="auth.role === 'admin' || auth.role === 'teacher'" type="info" plain round :icon="'User'" @click="openStudentList(course)">学生列表</el-button>
             <template v-if="allowEdit">
               <el-button :icon="'Edit'" @click="mod.openEdit(course)">{{ auth.role === "teacher" ? "维护" : "编辑" }}</el-button>
             </template>
@@ -110,6 +111,43 @@
       :loading="mod.loading.value"
       @save="mod.save"
     />
+
+    <!-- 学生列表弹窗 -->
+    <el-dialog v-model="studentDialog.visible" :title="`《${studentDialog.courseName}》- 学生列表`" width="900px" :close-on-click-modal="false">
+      <div v-loading="studentDialog.loading">
+        <div class="student-sort-bar">
+          <span class="sort-label">排序：</span>
+          <el-radio-group v-model="studentDialog.sortBy" size="small" @change="applyStudentSort">
+            <el-radio-button value="default">默认</el-radio-button>
+            <el-radio-button value="score-desc">成绩降序</el-radio-button>
+            <el-radio-button value="score-asc">成绩升序</el-radio-button>
+            <el-radio-button value="name">姓名</el-radio-button>
+            <el-radio-button value="numb">学号</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <el-empty v-if="!studentDialog.students.length" description="暂无选课学生" :image-size="80" />
+        <el-table v-else :data="studentDialog.students" class="data-table" stripe>
+          <el-table-column prop="studentName" label="姓名" min-width="120" show-overflow-tooltip />
+          <el-table-column label="学号" min-width="140">
+            <template #default="{ row }">{{ row.studentNumb || "-" }}</template>
+          </el-table-column>
+          <el-table-column prop="studentDept" label="学院" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="studentMajor" label="专业" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="studentClass" label="班级" min-width="100" />
+          <el-table-column label="成绩" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.graded ? 'success' : 'warning'" effect="light" round size="small">
+                {{ row.graded ? formatNumber(row.score) + " 分" : "待录入" }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="选课时间" min-width="160">
+            <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -121,9 +159,9 @@ import RecordDialog from "@/components/RecordDialog.vue";
 import { useModule } from "@/composables/useModule";
 import { useAuthStore } from "@/stores/auth";
 import { useReferenceStore } from "@/stores/reference";
-import { createModule } from "@/api";
+import { createModule, getCourseStudents } from "@/api";
 import { ENDPOINTS, VIEW_META, PAGE_SIZE_OPTIONS, canCreate, canEdit, canDelete } from "@/constants/modules";
-import { formatNumber, safeText } from "@/utils/format";
+import { formatNumber, formatDateTime, safeText } from "@/utils/format";
 
 const auth = useAuthStore();
 const references = useReferenceStore();
@@ -132,6 +170,14 @@ const pageSizeOptions = PAGE_SIZE_OPTIONS;
 
 const filters = reactive({ dept: "", teacherId: "", minScore: undefined, maxScore: undefined, onlyAvailable: false });
 const selectingId = ref("");
+const studentDialog = reactive({
+  visible: false,
+  loading: false,
+  courseName: "",
+  sortBy: "default",
+  students: [],
+  rawStudents: [],
+});
 
 const allowCreate = computed(() => canCreate(auth.role, "courses"));
 const allowEdit = computed(() => canEdit(auth.role, "courses"));
@@ -206,6 +252,53 @@ async function selectCourse(course) {
   } finally {
     selectingId.value = "";
   }
+}
+
+async function openStudentList(course) {
+  studentDialog.courseName = course.name;
+  studentDialog.visible = true;
+  studentDialog.loading = true;
+  studentDialog.sortBy = "default";
+  try {
+    const data = await getCourseStudents(course.id);
+    studentDialog.rawStudents = data || [];
+    studentDialog.students = [...studentDialog.rawStudents];
+  } catch (error) {
+    ElMessage.error(error.message || "加载学生列表失败");
+    studentDialog.rawStudents = [];
+    studentDialog.students = [];
+  } finally {
+    studentDialog.loading = false;
+  }
+}
+
+function applyStudentSort() {
+  const list = [...studentDialog.rawStudents];
+  switch (studentDialog.sortBy) {
+    case "score-desc":
+      list.sort((a, b) => {
+        const sa = a.graded && a.score != null ? a.score : -1;
+        const sb = b.graded && b.score != null ? b.score : -1;
+        return sb - sa;
+      });
+      break;
+    case "score-asc":
+      list.sort((a, b) => {
+        const sa = a.graded && a.score != null ? a.score : 999;
+        const sb = b.graded && b.score != null ? b.score : 999;
+        return sa - sb;
+      });
+      break;
+    case "name":
+      list.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || "", "zh"));
+      break;
+    case "numb":
+      list.sort((a, b) => (a.studentNumb || "").localeCompare(b.studentNumb || ""));
+      break;
+    default:
+      break;
+  }
+  studentDialog.students = list;
 }
 
 onMounted(() => {
@@ -298,4 +391,19 @@ onMounted(() => {
 }
 
 .course-actions .el-button { flex: 1; }
+
+.student-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sort-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
 </style>

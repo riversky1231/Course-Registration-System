@@ -45,3 +45,8 @@ export function updateModule(endpoint, id, data) {
 export function removeModule(endpoint, id) {
   return request.delete(`${endpoint}/${id}`);
 }
+
+// 获取指定课程的选课学生列表。
+export function getCourseStudents(courseId) {
+  return request.get(`/api/selections/course/${courseId}/students`);
+}

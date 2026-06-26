@@ -148,6 +148,35 @@ public interface SelectionMapper extends BaseMapper<SelectionRecord> {
       @Param("studentId") String studentId,
       @Param("excludeId") String excludeId);
 
+  @Select(
+      """
+      select s.id,
+             s.courseid as courseId,
+             c.name as courseName,
+             c.score as courseCredit,
+             c.dept as courseDept,
+             s.studentId as studentId,
+             coalesce(nullif(st.sname, ''), st.username) as studentName,
+             st.numb as studentNumb,
+             st.sdept as studentDept,
+             st.smajor as studentMajor,
+             st.sclass as studentClass,
+             s.teaid as teacherId,
+             coalesce(nullif(t.tname, ''), t.username) as teacherName,
+             s.graded as graded,
+             s.score,
+             s.createtime as createTime,
+             c.max_students as maxStudents,
+             c.time_slot as timeSlot
+      from tb_sct s
+      left join tb_course c on c.id = s.courseid
+      left join tb_student st on st.id = s.studentId
+      left join tb_teacher t on t.id = s.teaid
+      where s.courseid = #{courseId}
+      order by s.createtime desc, s.id desc
+      """)
+  List<SelectionRecord> selectByCourseId(@Param("courseId") String courseId);
+
   @Update(
       """
       update tb_sct

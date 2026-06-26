@@ -33,6 +33,14 @@ public class SelectionRecord {
   private String studentId;
   @TableField(exist = false)
   private String studentName;
+  @TableField(exist = false)
+  private String studentNumb;
+  @TableField(exist = false)
+  private String studentDept;
+  @TableField(exist = false)
+  private String studentMajor;
+  @TableField(exist = false)
+  private String studentClass;
   @Size(max = 32, message = "教师编号长度不能超过32位")
   @TableField("teaid")
   private String teacherId;
@@ -99,6 +107,38 @@ public class SelectionRecord {
 
   public void setStudentName(String studentName) {
     this.studentName = studentName;
+  }
+
+  public String getStudentNumb() {
+    return studentNumb;
+  }
+
+  public void setStudentNumb(String studentNumb) {
+    this.studentNumb = studentNumb;
+  }
+
+  public String getStudentDept() {
+    return studentDept;
+  }
+
+  public void setStudentDept(String studentDept) {
+    this.studentDept = studentDept;
+  }
+
+  public String getStudentMajor() {
+    return studentMajor;
+  }
+
+  public void setStudentMajor(String studentMajor) {
+    this.studentMajor = studentMajor;
+  }
+
+  public String getStudentClass() {
+    return studentClass;
+  }
+
+  public void setStudentClass(String studentClass) {
+    this.studentClass = studentClass;
   }
 
   public String getTeacherId() {

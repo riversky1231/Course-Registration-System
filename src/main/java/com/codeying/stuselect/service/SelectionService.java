@@ -124,6 +124,25 @@ public class SelectionService {
   }
 
   /**
+   * Lists students enrolled in a specific course (teacher/admin only).
+   *
+   * @param courseId course id
+   * @param session current HTTP session
+   * @return selection records for the course
+   */
+  public List<SelectionRecord> listStudentsByCourse(
+      final String courseId, final HttpSession session) {
+    UserSession current = sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);
+    if (current.getRole() == Role.TEACHER) {
+      Course course = courseService.require(courseId);
+      if (!current.getId().equals(course.getTid())) {
+        throw new AppException(HttpStatus.FORBIDDEN, "只能查看自己课程的学生");
+      }
+    }
+    return selectionMapper.selectByCourseId(courseId);
+  }
+
+  /**
    * Creates a selection record after applying all selection rules.
    *
    * @param record selection request
