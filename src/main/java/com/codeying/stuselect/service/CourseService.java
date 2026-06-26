@@ -36,26 +36,20 @@ public class CourseService {
   /** Session validation service. */
   private final SessionService sessionService;
 
-  /** Administrator audit log service. */
-  private final AdminAuditLogService adminAuditLogService;
-
   /**
-   * Creates a course service with mapper and audit dependencies.
+   * Creates a course service with mapper dependencies.
    *
    * @param courseMapperBean course mapper
    * @param selectionMapperBean selection mapper
    * @param sessionServiceBean session service
-   * @param auditLogService audit log service
    */
   public CourseService(
       final CourseMapper courseMapperBean,
       final SelectionMapper selectionMapperBean,
-      final SessionService sessionServiceBean,
-      final AdminAuditLogService auditLogService) {
+      final SessionService sessionServiceBean) {
     this.courseMapper = courseMapperBean;
     this.selectionMapper = selectionMapperBean;
     this.sessionService = sessionServiceBean;
-    this.adminAuditLogService = auditLogService;
   }
 
   /**
@@ -150,15 +144,6 @@ public class CourseService {
     course.setTimeSlot(normalizeTimeSlot(course.getTimeSlot()));
     course.setId(IdGenerator.newId());
     courseMapper.insert(course);
-    if (current.getRole() == Role.ADMIN) {
-      adminAuditLogService.record(
-          current,
-          "新增",
-          "课程",
-          course.getId(),
-          displayName(course),
-          detail(course));
-    }
     return courseMapper.selectByIdWithTeacher(course.getId());
   }
 
@@ -215,15 +200,6 @@ public class CourseService {
     if (!Objects.equals(previousTeacherId, course.getTid())) {
       selectionMapper.updateTeacherByCourseId(course.getId(), course.getTid());
     }
-    if (current.getRole() == Role.ADMIN) {
-      adminAuditLogService.record(
-          current,
-          "编辑",
-          "课程",
-          course.getId(),
-          displayName(course),
-          detail(course));
-    }
     return courseMapper.selectByIdWithTeacher(id);
   }
 
@@ -247,15 +223,6 @@ public class CourseService {
       throw new AppException(HttpStatus.BAD_REQUEST, "该课程已有学生选课，不能直接删除");
     }
     courseMapper.deleteById(id);
-    if (current.getRole() == Role.ADMIN) {
-      adminAuditLogService.record(
-          current,
-          "删除",
-          "课程",
-          course.getId(),
-          displayName(course),
-          detail(course));
-    }
   }
 
   /**
@@ -344,20 +311,4 @@ public class CourseService {
         < course.getMaxStudents();
   }
 
-  private String displayName(final Course course) {
-    return StringUtils.hasText(course.getName())
-        ? course.getName()
-        : course.getNumb();
-  }
-
-  private String detail(final Course course) {
-    return "课程编号："
-        + defaultValue(course.getNumb(), "-")
-        + "，学分："
-        + (course.getScore() == null ? "-" : course.getScore().toString())
-        + "，开课学院："
-        + defaultValue(course.getDept(), "-")
-        + "，时间："
-        + defaultValue(course.getTimeSlot(), "未排课");
-  }
 }

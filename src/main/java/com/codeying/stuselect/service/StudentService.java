@@ -33,27 +33,21 @@ public class StudentService {
   /** Password encoding service. */
   private final PasswordService passwordService;
 
-  /** Administrator audit log service. */
-  private final AdminAuditLogService adminAuditLogService;
-
   /**
-   * Creates a student service with mapper, session, password, and audit
+   * Creates a student service with mapper, session, and password
    * dependencies.
    *
    * @param studentMapperBean student mapper
    * @param sessionServiceBean session service
    * @param passwordServiceBean password service
-   * @param auditLogService audit log service
    */
   public StudentService(
       final StudentMapper studentMapperBean,
       final SessionService sessionServiceBean,
-      final PasswordService passwordServiceBean,
-      final AdminAuditLogService auditLogService) {
+      final PasswordService passwordServiceBean) {
     this.studentMapper = studentMapperBean;
     this.sessionService = sessionServiceBean;
     this.passwordService = passwordServiceBean;
-    this.adminAuditLogService = auditLogService;
   }
 
   /**
@@ -122,19 +116,12 @@ public class StudentService {
    */
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Student create(final Student student, final HttpSession session) {
-    final UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(student.getPassword());
     ensureUsernameAvailable(student.getUsername(), null);
     student.setId(IdGenerator.newId());
     student.setPassword(passwordService.encode(student.getPassword()));
     studentMapper.insert(student);
-    adminAuditLogService.record(
-        current,
-        "新增",
-        "学生",
-        student.getId(),
-        displayName(student),
-        "账号：" + student.getUsername());
     return studentMapper.selectById(student.getId());
   }
 
@@ -151,7 +138,7 @@ public class StudentService {
       final String id,
       final Student student,
       final HttpSession session) {
-    final UserSession actor = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     final Student target = require(id);
     final String nextUsername =
         defaultValue(student.getUsername(), target.getUsername());
@@ -159,16 +146,6 @@ public class StudentService {
     ensureUsernameAvailable(nextUsername, target.getId());
     mergeStudent(target, student);
     studentMapper.updateById(target);
-    adminAuditLogService.record(
-        actor,
-        "编辑",
-        "学生",
-        target.getId(),
-        displayName(target),
-        "账号："
-            + target.getUsername()
-            + "，学号："
-            + defaultValue(target.getNumb(), "-"));
     return studentMapper.selectById(id);
   }
 
@@ -180,16 +157,9 @@ public class StudentService {
    */
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(final String id, final HttpSession session) {
-    final UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    final Student target = require(id);
+    sessionService.requireRole(session, Role.ADMIN);
+    require(id);
     studentMapper.deleteById(id);
-    adminAuditLogService.record(
-        current,
-        "删除",
-        "学生",
-        target.getId(),
-        displayName(target),
-        "账号：" + target.getUsername());
   }
 
   /**
@@ -308,11 +278,5 @@ public class StudentService {
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "学生账号已存在");
     }
-  }
-
-  private String displayName(final Student student) {
-    return StringUtils.hasText(student.getSname())
-        ? student.getSname()
-        : student.getUsername();
   }
 }

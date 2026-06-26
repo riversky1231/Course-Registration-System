@@ -4,596 +4,569 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>学生选课系统</title>
-  <link rel="stylesheet" href="/assets/app.css?v=20260505-register-reason">
+  <link rel="stylesheet" href="/assets/vendor/element-plus.css">
+  <link rel="stylesheet" href="/assets/app.css?v=20260625-element-plus">
 </head>
 <body>
 <div id="app">
+  <!-- 加载中 -->
   <section v-if="booting" class="boot-screen">
     <div class="boot-card">
+      <div class="boot-spinner"></div>
       <p class="eyebrow">系统加载中</p>
       <h1>学生选课系统</h1>
-      <p>正在加载当前学期、账户会话和课务数据...</p>
+      <p>正在加载当前学期、账户会话和课务数据…</p>
     </div>
   </section>
 
-  <section v-else-if="!session" class="landing-shell">
-    <div class="landing-noise"></div>
-    <div class="landing-glow landing-glow-a"></div>
-    <div class="landing-glow landing-glow-b"></div>
+  <!-- 登录 / 注册 -->
+  <section v-else-if="!session" class="auth-shell">
+    <div class="auth-aurora auth-aurora-a"></div>
+    <div class="auth-aurora auth-aurora-b"></div>
+    <div class="auth-aurora auth-aurora-c"></div>
 
-    <div class="landing-grid">
-      <div class="landing-brand-panel">
-        <p class="semester-pill">{{ semesterLabel }}</p>
-        <div class="landing-copy">
-          <h1>学生选课系统</h1>
-          <p>统一处理课程浏览、学生选课、成绩录入与学期窗口管理。</p>
+    <div class="auth-layout">
+      <div class="auth-brand">
+        <span class="semester-pill">{{ semesterLabel }}</span>
+        <div class="auth-brand-copy">
+          <h1>学生选课<br>智慧管理平台</h1>
+          <p>统一处理课程浏览、学生选课、成绩录入与学期窗口管理，让教务运行清晰高效。</p>
         </div>
 
-        <div class="landing-illustration">
-          <div class="illustration-orb illustration-orb-a"></div>
-          <div class="illustration-orb illustration-orb-b"></div>
-          <div class="illustration-grid"></div>
-          <div class="illustration-caption">
-            <span>Course Portal</span>
-            <strong>Enrollment Access</strong>
-          </div>
-        </div>
+        <ul class="auth-feature-list">
+          <li>
+            <el-icon><Notebook /></el-icon>
+            <div><strong>课程中心</strong><span>课程编排、容量与排课一目了然</span></div>
+          </li>
+          <li>
+            <el-icon><MagicStick /></el-icon>
+            <div><strong>智能选课校验</strong><span>八重校验保障选课结果合理可靠</span></div>
+          </li>
+          <li>
+            <el-icon><TrophyBase /></el-icon>
+            <div><strong>成绩与绩点</strong><span>GPA、学分与成绩实时汇总</span></div>
+          </li>
+        </ul>
       </div>
 
-      <div class="login-shell">
-        <div class="auth-dock">
-          <div class="auth-top auth-top-card">
-            <p class="eyebrow auth-kicker">Portal Access</p>
-            <h2>{{ authMode === 'login' ? '登录系统' : '注册账号' }}</h2>
-            <p>{{ authMode === 'login' ? '请输入账号、密码和身份进入系统。' : '创建新的学生账号以进入选课平台。' }}</p>
-          </div>
-
-          <div class="auth-tabs auth-tabs-card">
-            <button :class="{ active: authMode === 'login' }" type="button" @click="authMode = 'login'">登录</button>
-            <button :class="{ active: authMode === 'register' }" type="button" @click="authMode = 'register'">注册</button>
-          </div>
-
-          <p v-if="message.text" class="message" :class="message.type">{{ message.text }}</p>
-
-          <form v-if="authMode === 'login'" class="auth-form auth-form-card" @submit.prevent="login">
-            <label>
-              <span>用户名</span>
-              <input v-model.trim="loginForm.username" type="text" maxlength="20" autocomplete="username" placeholder="请输入账号">
-            </label>
-            <label>
-              <span>密码</span>
-              <input v-model="loginForm.password" type="password" maxlength="20" autocomplete="current-password" placeholder="请输入密码">
-            </label>
-            <label>
-              <span>登录身份</span>
-              <select v-model="loginForm.role">
-                <option value="admin">管理员</option>
-                <option value="teacher">教师</option>
-                <option value="student">学生</option>
-              </select>
-            </label>
-            <button class="primary-button primary-button-accent wide" type="submit" :disabled="pending">
-              {{ pending ? '提交中...' : '进入学生选课系统' }}
-            </button>
-          </form>
-
-          <form v-else class="auth-form auth-form-card" novalidate @submit.prevent="register">
-            <label>
-              <span>用户名</span>
-              <input v-model.trim="registerForm.username" type="text" autocomplete="username" :title="authRules.usernameHint" placeholder="创建登录账号">
-              <small class="field-hint">{{ authRules.usernameHint }}</small>
-            </label>
-            <label>
-              <span>密码</span>
-              <input v-model="registerForm.password" type="password" autocomplete="new-password" :title="authRules.passwordHint" placeholder="创建登录密码">
-              <small class="field-hint">{{ authRules.passwordHint }}</small>
-            </label>
-            <p class="module-copy">当前仅开放学生自助注册，注册身份固定为学生。教师和管理员账号请由管理员在系统内创建。</p>
-            <button class="primary-button primary-button-accent wide" type="submit" :disabled="pending">
-              {{ pending ? '提交中...' : '创建账号' }}
-            </button>
-          </form>
+      <div class="auth-card">
+        <div class="auth-card-head">
+          <p class="eyebrow">Portal Access</p>
+          <h2>{{ authMode === 'login' ? '登录系统' : '注册账号' }}</h2>
+          <p>{{ authMode === 'login' ? '请输入账号、密码并选择身份进入系统。' : '创建新的学生账号以进入选课平台。' }}</p>
         </div>
+
+        <el-radio-group v-model="authMode" class="auth-switch" size="large">
+          <el-radio-button value="login">登录</el-radio-button>
+          <el-radio-button value="register">注册</el-radio-button>
+        </el-radio-group>
+
+        <el-form
+          v-if="authMode === 'login'"
+          class="auth-form"
+          label-position="top"
+          size="large"
+          @submit.prevent="login"
+        >
+          <el-form-item label="用户名">
+            <el-input v-model.trim="loginForm.username" maxlength="20" placeholder="请输入账号" autocomplete="username" :prefix-icon="'User'" clearable />
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="loginForm.password" type="password" maxlength="20" placeholder="请输入密码" autocomplete="current-password" :prefix-icon="'Lock'" show-password />
+          </el-form-item>
+          <el-form-item label="登录身份">
+            <el-select v-model="loginForm.role" class="auth-select" placeholder="选择身份">
+              <el-option label="管理员" value="admin" />
+              <el-option label="教师" value="teacher" />
+              <el-option label="学生" value="student" />
+            </el-select>
+          </el-form-item>
+          <el-button class="auth-submit" type="primary" size="large" native-type="submit" :loading="pending" round>
+            进入学生选课系统
+          </el-button>
+        </el-form>
+
+        <el-form
+          v-else
+          class="auth-form"
+          label-position="top"
+          size="large"
+          @submit.prevent="register"
+        >
+          <el-form-item label="用户名">
+            <el-input v-model.trim="registerForm.username" placeholder="创建登录账号" autocomplete="username" :prefix-icon="'User'" clearable />
+            <small class="field-hint">{{ authRules.usernameHint }}</small>
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="registerForm.password" type="password" placeholder="创建登录密码" autocomplete="new-password" :prefix-icon="'Lock'" show-password />
+            <small class="field-hint">{{ authRules.passwordHint }}</small>
+          </el-form-item>
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            title="当前仅开放学生自助注册"
+            description="注册身份固定为学生。教师和管理员账号请由管理员在系统内创建。"
+          />
+          <el-button class="auth-submit" type="primary" size="large" native-type="submit" :loading="pending" round>
+            创建账号
+          </el-button>
+        </el-form>
       </div>
     </div>
   </section>
 
-  <section v-else class="workspace-shell">
-    <div class="workspace-noise"></div>
-    <div class="workspace-glow workspace-glow-a"></div>
-    <div class="workspace-glow workspace-glow-b"></div>
-
-    <aside class="sidebar">
+  <!-- 工作台 -->
+  <el-container v-else class="workspace">
+    <el-aside class="sidebar" width="264px">
       <div class="sidebar-brand">
-        <div class="brand-lockup">
-          <span class="brand-mark">SC</span>
-          <div>
-            <p class="eyebrow">Student Course System</p>
-            <h2>学生选课系统</h2>
-          </div>
+        <span class="brand-mark">SC</span>
+        <div class="brand-copy">
+          <p class="eyebrow">Student Course System</p>
+          <h2>学生选课系统</h2>
         </div>
-        <span>{{ semesterLabel }}</span>
       </div>
 
       <div class="identity-card">
-        <strong>{{ session.displayName }}</strong>
-        <span>{{ roleLabel }}</span>
-        <small>{{ session.username }}</small>
+        <el-avatar :size="44" class="identity-avatar">{{ userInitial }}</el-avatar>
+        <div class="identity-copy">
+          <strong>{{ session.displayName }}</strong>
+          <span>{{ roleLabel }}</span>
+        </div>
       </div>
 
-      <nav class="nav-stack">
-        <button
-          v-for="view in availableViews"
-          :key="view.key"
-          class="nav-button"
-          :class="{ active: currentView === view.key }"
-          type="button"
-          @click="changeView(view.key)"
+      <el-scrollbar class="nav-scroll">
+        <el-menu
+          class="nav-menu"
+          :default-active="currentView"
+          @select="changeView"
         >
-          <div class="nav-copy">
-            <strong>{{ view.label }}</strong>
-            <span>{{ view.caption }}</span>
-          </div>
-          <em v-if="viewMetric(view.key) !== null" class="nav-metric">{{ viewMetric(view.key) }}</em>
-        </button>
-      </nav>
+          <el-menu-item v-for="view in availableViews" :key="view.key" :index="view.key">
+            <el-icon><component :is="iconFor(view.key)" /></el-icon>
+            <span class="nav-label">{{ view.label }}</span>
+            <el-badge
+              v-if="viewMetric(view.key) !== null"
+              :value="viewMetric(view.key)"
+              :max="999"
+              :show-zero="false"
+              class="nav-badge"
+              type="primary"
+            />
+          </el-menu-item>
+        </el-menu>
+      </el-scrollbar>
 
       <div class="sidebar-summary">
-        <div class="summary-chip">
-          <span>课程</span>
-          <strong>{{ summary.courses }}</strong>
-        </div>
-        <div class="summary-chip">
-          <span>选课</span>
-          <strong>{{ summary.selections }}</strong>
-        </div>
-        <div class="summary-chip">
-          <span>待录成绩</span>
-          <strong>{{ insights.pendingGrades }}</strong>
+        <div v-for="chip in summaryChips" :key="chip.label" class="summary-chip">
+          <el-icon><component :is="chip.icon" /></el-icon>
+          <div>
+            <span>{{ chip.label }}</span>
+            <strong>{{ chip.value }}</strong>
+          </div>
         </div>
       </div>
-    </aside>
+    </el-aside>
 
-    <main class="main-shell">
-      <header class="topbar">
+    <el-container class="main-container">
+      <el-header class="topbar" height="auto">
         <div class="topbar-meta">
-          <div class="topbar-copy">
-            <p class="eyebrow">{{ currentMeta.caption }}</p>
-            <h1>{{ currentMeta.label }}</h1>
-          </div>
+          <p class="eyebrow">{{ currentMeta.caption }}</p>
+          <h1>{{ currentMeta.label }}</h1>
           <p class="topbar-hint">{{ currentMeta.description }}</p>
         </div>
 
         <div class="topbar-actions">
-          <div class="user-pill">
-            <span class="user-avatar">{{ (session.displayName || roleLabel).slice(0, 1) }}</span>
-            <div class="user-pill-copy">
-              <strong>{{ session.displayName }}</strong>
-              <span>{{ roleLabel }}</span>
-            </div>
-          </div>
-          <form v-if="showSearchBar" class="search-form" @submit.prevent="refreshCurrent">
-            <input v-model.trim="searchText" type="search" :placeholder="currentMeta.searchPlaceholder">
-            <button class="ghost-button" type="submit">查询</button>
-          </form>
-          <button v-if="canCreateCurrent" class="primary-button" type="button" @click="openCreate">{{ moduleActionLabel }}</button>
-          <button class="ghost-button" type="button" @click="refreshCurrent">刷新</button>
-          <button class="ghost-button danger" type="button" @click="logout">退出登录</button>
+          <el-input
+            v-if="showSearchBar"
+            v-model.trim="searchText"
+            class="topbar-search"
+            :placeholder="currentMeta.searchPlaceholder"
+            :prefix-icon="'Search'"
+            clearable
+            @keyup.enter="refreshCurrent"
+            @clear="refreshCurrent"
+          >
+            <template #append>
+              <el-button :icon="'Search'" @click="refreshCurrent">查询</el-button>
+            </template>
+          </el-input>
+
+          <el-button v-if="canCreateCurrent" type="primary" :icon="'Plus'" @click="openCreate">{{ moduleActionLabel }}</el-button>
+          <el-button :icon="'Refresh'" circle @click="refreshCurrent" />
+          <el-button type="danger" plain :icon="'SwitchButton'" @click="logout">退出</el-button>
         </div>
-      </header>
+      </el-header>
 
-      <p v-if="message.text" class="message inline" :class="message.type">{{ message.text }}</p>
-
-      <section v-if="currentView === 'profile'" class="profile-shell simple-profile-shell">
-        <article class="panel profile-welcome-panel">
-          <p class="eyebrow">个人中心</p>
-          <h2>欢迎回来，{{ session.displayName }}</h2>
-          <div class="profile-mini-tags">
-            <span>{{ roleLabel }}</span>
-            <span>{{ semesterLabel }}</span>
-          </div>
-          <div class="simple-profile-grid">
-            <article v-for="item in profileSummaryItems" :key="item.label" class="simple-profile-card">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </article>
-          </div>
-        </article>
-
-        <article class="panel profile-panel profile-form-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">资料维护</p>
-              <h3>维护个人资料</h3>
+      <el-main class="main-body" v-loading="pending">
+        <!-- 个人资料 -->
+        <section v-if="currentView === 'profile'" class="profile-grid">
+          <el-card class="panel profile-welcome" shadow="never">
+            <p class="eyebrow">个人中心</p>
+            <h2>欢迎回来，{{ session.displayName }}</h2>
+            <div class="profile-tags">
+              <el-tag effect="dark" round>{{ roleLabel }}</el-tag>
+              <el-tag type="warning" effect="light" round>{{ semesterLabel }}</el-tag>
             </div>
-            <span class="panel-note">更新后会即时生效</span>
-          </div>
-
-          <form class="profile-form" @submit.prevent="saveProfile">
-            <div class="form-grid">
-              <template v-if="session.role === 'admin'">
-                <label><span>账号</span><input v-model.trim="profileForm.username" type="text" maxlength="20"></label>
-                <label><span>新密码</span><input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改"></label>
-                <label><span>姓名</span><input v-model.trim="profileForm.name" type="text" maxlength="18"></label>
-                <label><span>电话</span><input v-model.trim="profileForm.tele" type="text" maxlength="11"></label>
-              </template>
-
-              <template v-if="session.role === 'teacher'">
-                <label><span>账号</span><input v-model.trim="profileForm.username" type="text" maxlength="20"></label>
-                <label><span>新密码</span><input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改"></label>
-                <label><span>教工号</span><input v-model.trim="profileForm.numb" type="text" maxlength="32"></label>
-                <label><span>姓名</span><input v-model.trim="profileForm.tname" type="text" maxlength="18"></label>
-                <label><span>职称/职位</span><input v-model.trim="profileForm.tposition" type="text"></label>
-                <label><span>出生日期</span><input v-model="profileForm.tbirthday" type="date"></label>
-                <label><span>电话</span><input v-model.trim="profileForm.ttel" type="text" maxlength="11"></label>
-                <label>
-                  <span>性别</span>
-                  <select v-model="profileForm.gender">
-                    <option value="">请选择</option>
-                    <option value="男">男</option>
-                    <option value="女">女</option>
-                  </select>
-                </label>
-                <label class="span-2"><span>年龄</span><input v-model.number="profileForm.age" type="number" min="0" max="120"></label>
-              </template>
-
-              <template v-if="session.role === 'student'">
-                <label><span>账号</span><input v-model.trim="profileForm.username" type="text" maxlength="20"></label>
-                <label><span>新密码</span><input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改"></label>
-                <label><span>学号</span><input v-model.trim="profileForm.numb" type="text" maxlength="32"></label>
-                <label><span>姓名</span><input v-model.trim="profileForm.sname" type="text"></label>
-                <label><span>学院</span><input v-model.trim="profileForm.sdept" type="text"></label>
-                <label><span>专业</span><input v-model.trim="profileForm.smajor" type="text"></label>
-                <label><span>班级</span><input v-model.trim="profileForm.sclass" type="text"></label>
-                <label><span>出生日期</span><input v-model="profileForm.sbirthday" type="date"></label>
-                <label><span>电话</span><input v-model.trim="profileForm.tele" type="text" maxlength="11"></label>
-                <label><span>邮箱</span><input v-model.trim="profileForm.email" type="email" maxlength="255"></label>
-                <label>
-                  <span>性别</span>
-                  <select v-model="profileForm.ssex">
-                    <option value="">请选择</option>
-                    <option value="男">男</option>
-                    <option value="女">女</option>
-                  </select>
-                </label>
-                <label class="span-2"><span>年龄</span><input v-model.number="profileForm.age" type="number" min="0" max="120"></label>
-              </template>
-            </div>
-
-            <button class="primary-button wide" type="submit" :disabled="pending">
-              {{ pending ? '保存中...' : '保存个人资料' }}
-            </button>
-          </form>
-        </article>
-      </section>
-
-      <section v-else-if="currentView === 'gradeReport'" class="module-shell">
-        <div class="overview-grid">
-          <article class="overview-card">
-            <span>GPA</span>
-            <strong>{{ gradeReport.gpa }}</strong>
-            <p>已出成绩课程的加权绩点</p>
-          </article>
-          <article class="overview-card">
-            <span>平均成绩</span>
-            <strong>{{ gradeReport.averageScore }}</strong>
-            <p>已出成绩课程的平均分</p>
-          </article>
-          <article class="overview-card">
-            <span>已获学分</span>
-            <strong>{{ gradeReport.earnedCredits }}</strong>
-            <p>成绩达到及格线的累计学分</p>
-          </article>
-          <article class="overview-card">
-            <span>总学分</span>
-            <strong>{{ gradeReport.totalCredits }}</strong>
-            <p>已选课程累计学分</p>
-          </article>
-        </div>
-
-        <article class="panel module-table-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">成绩总览</p>
-              <h3>我的成绩与 GPA</h3>
-            </div>
-            <span class="panel-note">已出成绩 {{ gradeReport.gradedCourses }} 门 · 待出成绩 {{ gradeReport.pendingCourses }} 门</span>
-          </div>
-
-          <div v-if="!gradeReportRows.length" class="empty-state">
-            <strong>当前还没有成绩记录</strong>
-          </div>
-
-          <div v-else class="table-shell">
-            <table>
-              <thead>
-              <tr>
-                <th v-for="column in currentColumns" :key="column.key">{{ column.label }}</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="row in gradeReportRows" :key="row.id">
-                <td v-for="column in currentColumns" :key="column.key">
-                  <span :class="cellClass(column.key, row[column.key], row)">{{ renderCell(row, column.key) }}</span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="pager" v-if="gradeReportPager.total > 0">
-            <div class="pager-summary">
-              <span>共 {{ gradeReportPager.total }} 条</span>
-              <span>第 {{ gradeReportPager.page }} / {{ Math.max(gradeReportPager.totalPages, 1) }} 页</span>
-            </div>
-            <div class="pager-actions">
-              <select :value="gradeReportPager.pageSize" @change="changePageSize">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }} 条/页</option>
-              </select>
-              <button class="ghost-button" type="button" :disabled="gradeReportPager.page <= 1" @click="goToPage(gradeReportPager.page - 1)">上一页</button>
-              <button class="ghost-button" type="button" :disabled="gradeReportPager.totalPages <= 1 || gradeReportPager.page >= gradeReportPager.totalPages" @click="goToPage(gradeReportPager.page + 1)">下一页</button>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section v-else class="module-shell">
-        <article class="panel module-table-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">数据列表</p>
-              <h3>{{ currentMeta.label }}列表</h3>
-            </div>
-            <span class="panel-note">{{ currentMeta.searchPlaceholder }}</span>
-          </div>
-
-          <div v-if="currentView === 'courses'" class="filter-grid">
-            <label>
-              <span>开课学院</span>
-              <select v-model="courseFilters.dept">
-                <option value="">全部学院</option>
-                <option v-for="dept in courseDepartments" :key="dept" :value="dept">{{ dept }}</option>
-              </select>
-            </label>
-            <label>
-              <span>授课教师</span>
-              <select v-model="courseFilters.teacherId" :disabled="session.role === 'teacher'">
-                <option value="">全部教师</option>
-                <option v-for="teacher in references.teachers" :key="teacher.id" :value="teacher.id">
-                  {{ teacher.tname || teacher.username }}
-                </option>
-              </select>
-            </label>
-            <label>
-              <span>最低学分</span>
-              <input v-model.number="courseFilters.minScore" type="number" min="0" step="0.5">
-            </label>
-            <label>
-              <span>最高学分</span>
-              <input v-model.number="courseFilters.maxScore" type="number" min="0" step="0.5">
-            </label>
-            <label class="checkbox-field">
-              <input v-model="courseFilters.onlyAvailable" type="checkbox">
-              <span>仅看可选课程</span>
-            </label>
-            <button class="ghost-button" type="button" @click="applyModuleFilters">应用筛选</button>
-          </div>
-
-          <div v-if="!currentRows.length" class="empty-state">
-            <strong>当前还没有可展示的数据</strong>
-          </div>
-
-          <div v-else class="table-shell">
-            <table>
-              <thead>
-              <tr>
-                <th v-for="column in currentColumns" :key="column.key">{{ column.label }}</th>
-                <th v-if="showRowActions">操作</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="row in currentRows" :key="row.id">
-                <td v-for="column in currentColumns" :key="column.key">
-                  <span :class="cellClass(column.key, row[column.key], row)">{{ renderCell(row, column.key) }}</span>
-                </td>
-                <td v-if="showRowActions" class="actions-cell">
-                  <button v-if="canEditRow" class="table-link" type="button" @click="openEdit(row)">{{ editActionLabel }}</button>
-                  <button v-if="canDeleteRow" class="table-link danger" type="button" @click="removeRow(row)">{{ deleteActionLabel }}</button>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="pager" v-if="currentPager.total > 0">
-            <div class="pager-summary">
-              <span>共 {{ currentPager.total }} 条</span>
-              <span>第 {{ currentPager.page }} / {{ Math.max(currentPager.totalPages, 1) }} 页</span>
-            </div>
-            <div class="pager-actions">
-              <select :value="currentPager.pageSize" @change="changePageSize">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }} 条/页</option>
-              </select>
-              <button class="ghost-button" type="button" :disabled="currentPager.page <= 1" @click="goToPage(currentPager.page - 1)">上一页</button>
-              <button class="ghost-button" type="button" :disabled="currentPager.totalPages <= 1 || currentPager.page >= currentPager.totalPages" @click="goToPage(currentPager.page + 1)">下一页</button>
-            </div>
-          </div>
-        </article>
-      </section>
-    </main>
-
-    <div v-if="modal.visible" class="modal-mask" @click.self="closeModal">
-      <div class="modal-card">
-        <div class="modal-head">
-          <div>
-            <p class="eyebrow">记录编辑</p>
-            <h3>{{ modalTitle }}</h3>
-          </div>
-          <button class="ghost-button" type="button" @click="closeModal">关闭</button>
-        </div>
-
-        <form class="modal-form" @submit.prevent="saveModal">
-          <div class="form-grid">
-            <template v-if="currentView === 'admins'">
-              <label><span>账号</span><input v-model.trim="modal.form.username" type="text" maxlength="20"></label>
-              <label><span>密码</span><input v-model="modal.form.password" type="password" maxlength="20"></label>
-              <label><span>姓名</span><input v-model.trim="modal.form.name" type="text" maxlength="18"></label>
-              <label><span>电话</span><input v-model.trim="modal.form.tele" type="text" maxlength="11"></label>
-            </template>
-
-            <template v-if="currentView === 'teachers'">
-              <label><span>账号</span><input v-model.trim="modal.form.username" type="text" maxlength="20"></label>
-              <label><span>密码</span><input v-model="modal.form.password" type="password" maxlength="20"></label>
-              <label><span>教工号</span><input v-model.trim="modal.form.numb" type="text" maxlength="32"></label>
-              <label><span>姓名</span><input v-model.trim="modal.form.tname" type="text" maxlength="18"></label>
-              <label><span>职称/职位</span><input v-model.trim="modal.form.tposition" type="text"></label>
-              <label><span>出生日期</span><input v-model="modal.form.tbirthday" type="date"></label>
-              <label><span>电话</span><input v-model.trim="modal.form.ttel" type="text" maxlength="11"></label>
-              <label>
-                <span>性别</span>
-                <select v-model="modal.form.gender">
-                  <option value="">请选择</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                </select>
-              </label>
-              <label class="span-2"><span>年龄</span><input v-model.number="modal.form.age" type="number" min="0" max="120"></label>
-            </template>
-
-            <template v-if="currentView === 'students'">
-              <label><span>账号</span><input v-model.trim="modal.form.username" type="text" maxlength="20"></label>
-              <label><span>密码</span><input v-model="modal.form.password" type="password" maxlength="20"></label>
-              <label><span>学号</span><input v-model.trim="modal.form.numb" type="text" maxlength="32"></label>
-              <label><span>姓名</span><input v-model.trim="modal.form.sname" type="text"></label>
-              <label><span>学院</span><input v-model.trim="modal.form.sdept" type="text"></label>
-              <label><span>专业</span><input v-model.trim="modal.form.smajor" type="text"></label>
-              <label><span>班级</span><input v-model.trim="modal.form.sclass" type="text"></label>
-              <label><span>出生日期</span><input v-model="modal.form.sbirthday" type="date"></label>
-              <label><span>电话</span><input v-model.trim="modal.form.tele" type="text" maxlength="11"></label>
-              <label><span>邮箱</span><input v-model.trim="modal.form.email" type="email" maxlength="255"></label>
-              <label>
-                <span>性别</span>
-                <select v-model="modal.form.ssex">
-                  <option value="">请选择</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                </select>
-              </label>
-              <label class="span-2"><span>年龄</span><input v-model.number="modal.form.age" type="number" min="0" max="120"></label>
-            </template>
-
-            <template v-if="currentView === 'courses'">
-              <label><span>课程名称</span><input v-model.trim="modal.form.name" type="text" maxlength="18"></label>
-              <label><span>课程编号</span><input v-model.trim="modal.form.numb" type="text" maxlength="32"></label>
-              <label><span>开课学院</span><input v-model.trim="modal.form.dept" type="text" maxlength="255"></label>
-              <label><span>学分</span><input v-model.number="modal.form.score" type="number" min="0" max="100" step="0.5"></label>
-              <label><span>容量上限</span><input v-model.number="modal.form.maxStudents" type="number" min="0" step="1" placeholder="0 表示不限制"></label>
-              <label v-if="session.role === 'admin'">
-                <span>授课教师</span>
-                <select v-model="modal.form.tid">
-                  <option value="">待安排</option>
-                  <option v-for="teacher in references.teachers" :key="teacher.id" :value="teacher.id">
-                    {{ teacher.tname || teacher.username }}
-                  </option>
-                </select>
-              </label>
-              <label :class="session.role === 'admin' ? '' : 'span-2'"><span>上课时间</span><input v-model.trim="modal.form.timeSlot" type="text" maxlength="64" placeholder="如：周一第3-4节"></label>
-              <label class="span-2"><span>课程简介</span><textarea v-model.trim="modal.form.jianjie" rows="4"></textarea></label>
-            </template>
-
-            <template v-if="currentView === 'selections'">
-              <div v-if="modal.mode === 'edit' && session.role === 'teacher'" class="inline-note span-2">
-                <strong>当前记录</strong>
-                <p>{{ modal.form.courseName || '未命名课程' }} · {{ modal.form.studentName || '未命名学生' }}</p>
+            <div class="profile-mini-grid">
+              <div v-for="item in profileSummaryItems" :key="item.label" class="profile-mini-card">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
               </div>
+            </div>
+          </el-card>
 
-              <template v-if="session.role === 'student'">
-                <label class="span-2">
-                  <span>选择课程</span>
-                  <select v-model="modal.form.courseId" @change="clearModalFeedback">
-                    <option value="">请选择课程</option>
-                    <option v-for="course in references.courses" :key="course.id" :value="course.id">
-                      {{ course.name }} / {{ course.teacherName || '待安排教师' }} / {{ course.timeSlot || '未排课' }} / {{ course.maxStudents > 0 ? `${course.maxStudents}人` : '不限' }}
-                    </option>
-                  </select>
-                </label>
-                <p v-if="modal.feedback.text" class="modal-feedback span-2" :class="modal.feedback.type" aria-live="polite">
-                  {{ modal.feedback.text }}
-                </p>
-                <p v-else-if="selectedCourseStatus" class="modal-feedback span-2" :class="selectedCourseStatus.type" aria-live="polite">
-                  {{ selectedCourseStatus.text }}
-                </p>
-                <div class="inline-note span-2">
-                  <strong>提交说明</strong>
-                  <p>学生发起选课后，成绩会由授课教师在后续统一录入。</p>
+          <el-card class="panel profile-form-panel" shadow="never">
+            <template #header>
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">资料维护</p>
+                  <h3>维护个人资料</h3>
                 </div>
-              </template>
-
-              <template v-else-if="session.role === 'teacher'">
-                <label class="span-2"><span>成绩录入</span><input v-model.number="modal.form.score" type="number" min="0" max="100" step="0.5"></label>
-              </template>
-
-              <template v-else>
-                <label>
-                  <span>课程</span>
-                  <select v-model="modal.form.courseId" @change="clearModalFeedback">
-                    <option value="">请选择课程</option>
-                    <option v-for="course in references.courses" :key="course.id" :value="course.id">
-                      {{ course.name }} / {{ course.teacherName || '待安排教师' }} / {{ course.timeSlot || '未排课' }} / {{ course.maxStudents > 0 ? `${course.maxStudents}人` : '不限' }}
-                    </option>
-                  </select>
-                </label>
-                <label>
-                  <span>学生</span>
-                  <select v-model="modal.form.studentId">
-                    <option value="">请选择学生</option>
-                    <option v-for="student in references.students" :key="student.id" :value="student.id">
-                      {{ student.sname || student.username }}
-                    </option>
-                  </select>
-                </label>
-                <p v-if="modal.feedback.text" class="modal-feedback span-2" :class="modal.feedback.type" aria-live="polite">
-                  {{ modal.feedback.text }}
-                </p>
-                <p v-else-if="selectedCourseStatus" class="modal-feedback span-2" :class="selectedCourseStatus.type" aria-live="polite">
-                  {{ selectedCourseStatus.text }}
-                </p>
-                <label class="span-2"><span>成绩</span><input v-model.number="modal.form.score" type="number" min="0" max="100" step="0.5"></label>
-              </template>
+                <el-tag type="info" effect="plain" round>更新后即时生效</el-tag>
+              </div>
             </template>
 
-            <template v-if="currentView === 'selectionWindows'">
-              <label>
-                <span>窗口类型</span>
-                <select v-model="modal.form.actionType">
-                  <option value="SELECT">选课窗口</option>
-                  <option value="DROP">退课窗口</option>
-                </select>
-              </label>
-              <label><span>窗口名称</span><input v-model.trim="modal.form.name" type="text" maxlength="64"></label>
-              <label><span>开始时间</span><input v-model="modal.form.startTime" type="datetime-local"></label>
-              <label><span>结束时间</span><input v-model="modal.form.endTime" type="datetime-local"></label>
-              <label>
-                <span>启用状态</span>
-                <select v-model="modal.form.enabled">
-                  <option :value="true">启用</option>
-                  <option :value="false">停用</option>
-                </select>
-              </label>
-              <label class="span-2"><span>说明</span><textarea v-model.trim="modal.form.description" rows="4"></textarea></label>
-            </template>
+            <el-form class="data-form" label-position="top" @submit.prevent="saveProfile">
+              <el-row :gutter="18">
+                <template v-if="session.role === 'admin'">
+                  <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="profileForm.username" maxlength="20" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="新密码"><el-input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改" show-password /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="profileForm.name" maxlength="18" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="profileForm.tele" maxlength="11" /></el-form-item></el-col>
+                </template>
+
+                <template v-if="session.role === 'teacher'">
+                  <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="profileForm.username" maxlength="20" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="新密码"><el-input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改" show-password /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="教工号"><el-input v-model.trim="profileForm.numb" maxlength="32" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="profileForm.tname" maxlength="18" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="职称/职位"><el-input v-model.trim="profileForm.tposition" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="出生日期"><el-date-picker v-model="profileForm.tbirthday" type="date" value-format="YYYY-MM-DD" class="full-width" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="profileForm.ttel" maxlength="11" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="性别"><el-select v-model="profileForm.gender" class="full-width" placeholder="请选择"><el-option label="男" value="男" /><el-option label="女" value="女" /></el-select></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="年龄"><el-input-number v-model="profileForm.age" :min="0" :max="120" class="full-width" controls-position="right" /></el-form-item></el-col>
+                </template>
+
+                <template v-if="session.role === 'student'">
+                  <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="profileForm.username" maxlength="20" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="新密码"><el-input v-model="profileForm.password" type="password" maxlength="20" placeholder="留空则不修改" show-password /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="学号"><el-input v-model.trim="profileForm.numb" maxlength="32" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="profileForm.sname" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="学院"><el-input v-model.trim="profileForm.sdept" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="专业"><el-input v-model.trim="profileForm.smajor" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="班级"><el-input v-model.trim="profileForm.sclass" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="出生日期"><el-date-picker v-model="profileForm.sbirthday" type="date" value-format="YYYY-MM-DD" class="full-width" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="profileForm.tele" maxlength="11" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="邮箱"><el-input v-model.trim="profileForm.email" maxlength="255" /></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="性别"><el-select v-model="profileForm.ssex" class="full-width" placeholder="请选择"><el-option label="男" value="男" /><el-option label="女" value="女" /></el-select></el-form-item></el-col>
+                  <el-col :xs="24" :sm="12"><el-form-item label="年龄"><el-input-number v-model="profileForm.age" :min="0" :max="120" class="full-width" controls-position="right" /></el-form-item></el-col>
+                </template>
+              </el-row>
+
+              <el-button class="form-submit" type="primary" size="large" native-type="submit" :loading="pending" round>保存个人资料</el-button>
+            </el-form>
+          </el-card>
+        </section>
+
+        <!-- 我的成绩 -->
+        <section v-else-if="currentView === 'gradeReport'" class="module-shell">
+          <div class="overview-grid">
+            <el-card v-for="card in gradeOverviewCards" :key="card.label" class="overview-card" :class="'accent-' + card.accent" shadow="never">
+              <div class="overview-icon"><el-icon><component :is="card.icon" /></el-icon></div>
+              <span class="overview-label">{{ card.label }}</span>
+              <strong class="overview-value">{{ card.value }}</strong>
+              <p class="overview-hint">{{ card.hint }}</p>
+            </el-card>
           </div>
 
-          <button class="primary-button wide" type="submit" :disabled="pending">
-            {{ pending ? '保存中...' : '保存变更' }}
-          </button>
-        </form>
-      </div>
-    </div>
-  </section>
+          <el-card class="panel" shadow="never">
+            <template #header>
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">成绩总览</p>
+                  <h3>我的成绩与 GPA</h3>
+                </div>
+                <el-space>
+                  <el-tag type="success" effect="light" round>已出成绩 {{ gradeReport.gradedCourses }} 门</el-tag>
+                  <el-tag type="warning" effect="light" round>待出成绩 {{ gradeReport.pendingCourses }} 门</el-tag>
+                </el-space>
+              </div>
+            </template>
+
+            <el-empty v-if="!gradeReportRows.length" description="当前还没有成绩记录" />
+
+            <template v-else>
+              <el-table :data="gradeReportRows" class="data-table" stripe>
+                <el-table-column
+                  v-for="column in currentColumns"
+                  :key="column.key"
+                  :label="column.label"
+                  :width="column.width"
+                  :min-width="column.minWidth"
+                  show-overflow-tooltip
+                >
+                  <template #default="{ row }">
+                    <el-tag v-if="tagType(column.key, row)" :type="tagType(column.key, row)" effect="light" round>{{ renderCell(row, column.key) }}</el-tag>
+                    <span v-else>{{ renderCell(row, column.key) }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+
+              <div class="pager" v-if="gradeReportPager.total > 0">
+                <el-pagination
+                  background
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="gradeReportPager.total"
+                  :current-page="gradeReportPager.page"
+                  :page-size="gradeReportPager.pageSize"
+                  :page-sizes="pageSizeOptions"
+                  @current-change="handlePageChange"
+                  @size-change="handleSizeChange"
+                />
+              </div>
+            </template>
+          </el-card>
+        </section>
+
+        <!-- 通用数据模块 -->
+        <section v-else class="module-shell">
+          <el-card class="panel" shadow="never">
+            <template #header>
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">数据列表</p>
+                  <h3>{{ currentMeta.label }}</h3>
+                </div>
+                <el-tag type="info" effect="plain" round>共 {{ currentPager.total }} 条</el-tag>
+              </div>
+            </template>
+
+            <el-form v-if="currentView === 'courses'" class="filter-bar" inline>
+              <el-form-item label="开课学院">
+                <el-select v-model="courseFilters.dept" class="filter-select" placeholder="全部学院" clearable>
+                  <el-option v-for="dept in courseDepartments" :key="dept" :label="dept" :value="dept" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="授课教师">
+                <el-select v-model="courseFilters.teacherId" class="filter-select" placeholder="全部教师" clearable :disabled="session.role === 'teacher'">
+                  <el-option v-for="teacher in references.teachers" :key="teacher.id" :label="teacher.tname || teacher.username" :value="teacher.id" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="最低学分">
+                <el-input-number v-model="courseFilters.minScore" :min="0" :step="0.5" :controls="false" class="filter-number" placeholder="0" />
+              </el-form-item>
+              <el-form-item label="最高学分">
+                <el-input-number v-model="courseFilters.maxScore" :min="0" :step="0.5" :controls="false" class="filter-number" placeholder="不限" />
+              </el-form-item>
+              <el-form-item>
+                <el-checkbox v-model="courseFilters.onlyAvailable" border>仅看可选课程</el-checkbox>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :icon="'Filter'" @click="applyModuleFilters">应用筛选</el-button>
+                <el-button :icon="'RefreshLeft'" @click="resetCourseFilters">重置</el-button>
+              </el-form-item>
+            </el-form>
+
+            <el-empty v-if="!currentRows.length" description="当前还没有可展示的数据" />
+
+            <template v-else>
+              <el-table :data="currentRows" class="data-table" stripe>
+                <el-table-column
+                  v-for="column in currentColumns"
+                  :key="column.key"
+                  :label="column.label"
+                  :width="column.width"
+                  :min-width="column.minWidth"
+                  show-overflow-tooltip
+                >
+                  <template #default="{ row }">
+                    <el-tag v-if="tagType(column.key, row)" :type="tagType(column.key, row)" effect="light" round>{{ renderCell(row, column.key) }}</el-tag>
+                    <span v-else>{{ renderCell(row, column.key) }}</span>
+                  </template>
+                </el-table-column>
+
+                <el-table-column v-if="showRowActions" label="操作" fixed="right" :width="160" align="center">
+                  <template #default="{ row }">
+                    <el-button v-if="canEditRow" type="primary" link :icon="'Edit'" @click="openEdit(row)">{{ editActionLabel }}</el-button>
+                    <el-button v-if="canDeleteRow" type="danger" link :icon="'Delete'" @click="removeRow(row)">{{ deleteActionLabel }}</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+
+              <div class="pager" v-if="currentPager.total > 0">
+                <el-pagination
+                  background
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="currentPager.total"
+                  :current-page="currentPager.page"
+                  :page-size="currentPager.pageSize"
+                  :page-sizes="pageSizeOptions"
+                  @current-change="handlePageChange"
+                  @size-change="handleSizeChange"
+                />
+              </div>
+            </template>
+          </el-card>
+        </section>
+      </el-main>
+    </el-container>
+  </el-container>
+
+  <!-- 新增 / 编辑 弹窗 -->
+  <el-dialog
+    v-model="modal.visible"
+    :title="modalTitle"
+    class="record-dialog"
+    width="640px"
+    align-center
+    @closed="closeModal"
+  >
+    <el-form class="data-form" label-position="top" @submit.prevent="saveModal">
+      <el-row :gutter="18">
+        <template v-if="currentView === 'admins'">
+          <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="modal.form.username" maxlength="20" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="密码"><el-input v-model="modal.form.password" type="password" maxlength="20" show-password /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="modal.form.name" maxlength="18" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="modal.form.tele" maxlength="11" /></el-form-item></el-col>
+        </template>
+
+        <template v-if="currentView === 'teachers'">
+          <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="modal.form.username" maxlength="20" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="密码"><el-input v-model="modal.form.password" type="password" maxlength="20" show-password /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="教工号"><el-input v-model.trim="modal.form.numb" maxlength="32" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="modal.form.tname" maxlength="18" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="职称/职位"><el-input v-model.trim="modal.form.tposition" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="出生日期"><el-date-picker v-model="modal.form.tbirthday" type="date" value-format="YYYY-MM-DD" class="full-width" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="modal.form.ttel" maxlength="11" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="性别"><el-select v-model="modal.form.gender" class="full-width" placeholder="请选择"><el-option label="男" value="男" /><el-option label="女" value="女" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="年龄"><el-input-number v-model="modal.form.age" :min="0" :max="120" class="full-width" controls-position="right" /></el-form-item></el-col>
+        </template>
+
+        <template v-if="currentView === 'students'">
+          <el-col :xs="24" :sm="12"><el-form-item label="账号"><el-input v-model.trim="modal.form.username" maxlength="20" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="密码"><el-input v-model="modal.form.password" type="password" maxlength="20" show-password /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="学号"><el-input v-model.trim="modal.form.numb" maxlength="32" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="姓名"><el-input v-model.trim="modal.form.sname" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="学院"><el-input v-model.trim="modal.form.sdept" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="专业"><el-input v-model.trim="modal.form.smajor" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="班级"><el-input v-model.trim="modal.form.sclass" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="出生日期"><el-date-picker v-model="modal.form.sbirthday" type="date" value-format="YYYY-MM-DD" class="full-width" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="modal.form.tele" maxlength="11" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="邮箱"><el-input v-model.trim="modal.form.email" maxlength="255" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="性别"><el-select v-model="modal.form.ssex" class="full-width" placeholder="请选择"><el-option label="男" value="男" /><el-option label="女" value="女" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="年龄"><el-input-number v-model="modal.form.age" :min="0" :max="120" class="full-width" controls-position="right" /></el-form-item></el-col>
+        </template>
+
+        <template v-if="currentView === 'courses'">
+          <el-col :xs="24" :sm="12"><el-form-item label="课程名称"><el-input v-model.trim="modal.form.name" maxlength="18" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="课程编号"><el-input v-model.trim="modal.form.numb" maxlength="32" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="开课学院"><el-input v-model.trim="modal.form.dept" maxlength="255" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="学分"><el-input-number v-model="modal.form.score" :min="0" :max="100" :step="0.5" class="full-width" controls-position="right" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="容量上限"><el-input-number v-model="modal.form.maxStudents" :min="0" :step="1" class="full-width" controls-position="right" placeholder="0 表示不限制" /></el-form-item></el-col>
+          <el-col v-if="session.role === 'admin'" :xs="24" :sm="12">
+            <el-form-item label="授课教师">
+              <el-select v-model="modal.form.tid" class="full-width" placeholder="待安排" clearable>
+                <el-option v-for="teacher in references.teachers" :key="teacher.id" :label="teacher.tname || teacher.username" :value="teacher.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="上课时间"><el-input v-model.trim="modal.form.timeSlot" maxlength="64" placeholder="如：周一第3-4节" /></el-form-item></el-col>
+          <el-col :span="24"><el-form-item label="课程简介"><el-input v-model.trim="modal.form.jianjie" type="textarea" :rows="4" /></el-form-item></el-col>
+        </template>
+
+        <template v-if="currentView === 'selections'">
+          <el-col v-if="modal.mode === 'edit' && session.role === 'teacher'" :span="24">
+            <el-alert type="info" :closable="false" show-icon :title="(modal.form.courseName || '未命名课程') + ' · ' + (modal.form.studentName || '未命名学生')" description="当前记录" />
+          </el-col>
+
+          <template v-if="session.role === 'student'">
+            <el-col :span="24">
+              <el-form-item label="选择课程">
+                <el-select v-model="modal.form.courseId" class="full-width" filterable placeholder="请选择课程" @change="clearModalFeedback">
+                  <el-option
+                    v-for="course in references.courses"
+                    :key="course.id"
+                    :label="course.name + ' / ' + (course.teacherName || '待安排教师') + ' / ' + (course.timeSlot || '未排课') + ' / ' + (course.maxStudents > 0 ? course.maxStudents + '人' : '不限')"
+                    :value="course.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="24" v-if="modal.feedback.text">
+              <el-alert :type="modal.feedback.type === 'error' ? 'error' : modal.feedback.type === 'success' ? 'success' : 'info'" :closable="false" show-icon :title="modal.feedback.text" />
+            </el-col>
+            <el-col :span="24" v-else-if="selectedCourseStatus">
+              <el-alert :type="selectedCourseStatus.type === 'error' ? 'error' : selectedCourseStatus.type === 'success' ? 'success' : 'info'" :closable="false" show-icon :title="selectedCourseStatus.text" />
+            </el-col>
+            <el-col :span="24">
+              <el-alert type="info" :closable="false" title="提交说明" description="学生发起选课后，成绩会由授课教师在后续统一录入。" />
+            </el-col>
+          </template>
+
+          <template v-else-if="session.role === 'teacher'">
+            <el-col :span="24"><el-form-item label="成绩录入"><el-input-number v-model="modal.form.score" :min="0" :max="100" :step="0.5" class="full-width" controls-position="right" /></el-form-item></el-col>
+          </template>
+
+          <template v-else>
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="课程">
+                <el-select v-model="modal.form.courseId" class="full-width" filterable placeholder="请选择课程" @change="clearModalFeedback">
+                  <el-option
+                    v-for="course in references.courses"
+                    :key="course.id"
+                    :label="course.name + ' / ' + (course.teacherName || '待安排教师') + ' / ' + (course.timeSlot || '未排课')"
+                    :value="course.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="学生">
+                <el-select v-model="modal.form.studentId" class="full-width" filterable placeholder="请选择学生">
+                  <el-option v-for="student in references.students" :key="student.id" :label="student.sname || student.username" :value="student.id" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="24" v-if="modal.feedback.text">
+              <el-alert :type="modal.feedback.type === 'error' ? 'error' : modal.feedback.type === 'success' ? 'success' : 'info'" :closable="false" show-icon :title="modal.feedback.text" />
+            </el-col>
+            <el-col :span="24" v-else-if="selectedCourseStatus">
+              <el-alert :type="selectedCourseStatus.type === 'error' ? 'error' : selectedCourseStatus.type === 'success' ? 'success' : 'info'" :closable="false" show-icon :title="selectedCourseStatus.text" />
+            </el-col>
+            <el-col :span="24"><el-form-item label="成绩"><el-input-number v-model="modal.form.score" :min="0" :max="100" :step="0.5" class="full-width" controls-position="right" /></el-form-item></el-col>
+          </template>
+        </template>
+
+        <template v-if="currentView === 'selectionWindows'">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="窗口类型">
+              <el-select v-model="modal.form.actionType" class="full-width">
+                <el-option label="选课窗口" value="SELECT" />
+                <el-option label="退课窗口" value="DROP" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="窗口名称"><el-input v-model.trim="modal.form.name" maxlength="64" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="开始时间"><el-date-picker v-model="modal.form.startTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="full-width" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="结束时间"><el-date-picker v-model="modal.form.endTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" class="full-width" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="启用状态"><el-switch v-model="modal.form.enabled" active-text="启用" inactive-text="停用" inline-prompt /></el-form-item></el-col>
+          <el-col :span="24"><el-form-item label="说明"><el-input v-model.trim="modal.form.description" type="textarea" :rows="4" /></el-form-item></el-col>
+        </template>
+      </el-row>
+    </el-form>
+
+    <template #footer>
+      <el-button @click="closeModal">关闭</el-button>
+      <el-button type="primary" :loading="pending" @click="saveModal">保存变更</el-button>
+    </template>
+  </el-dialog>
 </div>
 
 <script src="/assets/vendor/vue.global.prod.js"></script>
-<script src="/assets/app.js?v=20260601-selection-feedback"></script>
+<script src="/assets/vendor/element-plus.full.min.js"></script>
+<script src="/assets/vendor/element-plus-zh-cn.min.js"></script>
+<script src="/assets/vendor/element-plus-icons.iife.min.js"></script>
+<script src="/assets/vendor/axios.min.js"></script>
+<script src="/assets/app.js?v=20260625-element-plus"></script>
 </body>
 </html>

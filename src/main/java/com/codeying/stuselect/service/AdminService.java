@@ -24,17 +24,14 @@ public class AdminService {
   private final AdminMapper adminMapper;
   private final SessionService sessionService;
   private final PasswordService passwordService;
-  private final AdminAuditLogService adminAuditLogService;
 
   public AdminService(
       AdminMapper adminMapper,
       SessionService sessionService,
-      PasswordService passwordService,
-      AdminAuditLogService adminAuditLogService) {
+      PasswordService passwordService) {
     this.adminMapper = adminMapper;
     this.sessionService = sessionService;
     this.passwordService = passwordService;
-    this.adminAuditLogService = adminAuditLogService;
   }
 
   public PageResult<Admin> list(String keyword, Integer page, Integer pageSize, HttpSession session) {
@@ -60,20 +57,18 @@ public class AdminService {
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Admin create(Admin admin, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     CredentialRules.requirePassword(admin.getPassword());
     ensureUsernameAvailable(admin.getUsername(), null);
     admin.setId(IdGenerator.newId());
     admin.setPassword(passwordService.encode(admin.getPassword()));
     adminMapper.insert(admin);
-    adminAuditLogService.record(
-        current, "新增", "管理员", admin.getId(), displayName(admin), "账号：" + admin.getUsername());
     return adminMapper.selectById(admin.getId());
   }
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public Admin update(String id, Admin admin, HttpSession session) {
-    UserSession actor = sessionService.requireRole(session, Role.ADMIN);
+    sessionService.requireRole(session, Role.ADMIN);
     Admin target = require(id);
     String nextUsername = defaultValue(admin.getUsername(), target.getUsername());
     CredentialRules.requirePasswordIfProvided(admin.getPassword());
@@ -83,13 +78,6 @@ public class AdminService {
     target.setName(admin.getName());
     target.setTele(admin.getTele());
     adminMapper.updateById(target);
-    adminAuditLogService.record(
-        actor,
-        "编辑",
-        "管理员",
-        target.getId(),
-        displayName(target),
-        "账号：" + target.getUsername() + "，电话：" + defaultValue(target.getTele(), "-"));
     return adminMapper.selectById(id);
   }
 
@@ -114,11 +102,9 @@ public class AdminService {
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(String id, HttpSession session) {
-    UserSession current = sessionService.requireRole(session, Role.ADMIN);
-    Admin target = require(id);
+    sessionService.requireRole(session, Role.ADMIN);
+    require(id);
     adminMapper.deleteById(id);
-    adminAuditLogService.record(
-        current, "删除", "管理员", target.getId(), displayName(target), "账号：" + target.getUsername());
   }
 
   public long count(HttpSession session) {
@@ -149,9 +135,5 @@ public class AdminService {
     if (existed != null && !existed.getId().equals(currentId)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "管理员账号已存在");
     }
-  }
-
-  private String displayName(Admin admin) {
-    return StringUtils.hasText(admin.getName()) ? admin.getName() : admin.getUsername();
   }
 }

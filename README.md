@@ -9,7 +9,10 @@
 - MyBatis-Plus 3.5.7
 - MySQL
 - Maven
-- Vue 3（静态资源方式集成）
+- 前端：Vue 3 + Element Plus + axios（以本地静态资源方式集成，无需额外构建）
+
+> 前端依赖（Vue、Element Plus、Element Plus Icons、中文语言包、axios）均已下载到
+> `src/main/resources/static/assets/vendor/` 本地目录，配合后端 CSP（`script-src 'self'`）直接由应用提供，无需访问外网 CDN。
 
 ## 功能概览
 
@@ -19,12 +22,11 @@
 - 学生选课与退课
 - 重复选课、容量、时间冲突校验
 - 教师成绩录入权限限制
-- 管理员 CRUD 审计日志
 - 学生成绩 / GPA 查询
 - 课程组合筛选
 - 统一分页返回
-- 消息中心（站内消息）
 - 选退课时间窗口控制
+- AI 选课助手 / 智能推荐 / 课程大纲生成
 - `/actuator/health` 健康检查
 - 教师与学生信息管理
 - 个人资料维护
@@ -84,15 +86,13 @@ mvn spring-boot:run
 - 如果你没有建库权限，可以先手工创建 `app_stu_select` 数据库，再从脚本中的建表部分开始执行
 - 脚本中的演示账号密码已按 BCrypt 哈希写入，登录明文仍然是 `123456`
 
-示例管理员账号：
+示例管理员账号（共 5 个，密码均为 `123456`）：
 
-- 用户名：`admin`
-- 密码：`123456`
+- 用户名：`admin`（系统管理员）
+- 用户名：`admin_jiaowu`（教务管理员）
+- 其余：`admin_audit`、`admin_xuanke`、`admin_super`
 
-示例审计管理员账号：
-
-- 用户名：`audit_admin`
-- 密码：`123456`
+演示数据规模：管理员 5、教师 30、学生 80。
 
 ## 目录结构
 

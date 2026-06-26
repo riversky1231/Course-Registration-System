@@ -1,0 +1,145 @@
+:root {
+  /* Element Plus 主题色覆盖 —— 现代靛紫色系 */
+  --el-color-primary: #5b5bf0;
+  --el-color-primary-light-3: #8484f5;
+  --el-color-primary-light-5: #adadf8;
+  --el-color-primary-light-7: #d2d2fb;
+  --el-color-primary-light-8: #e4e4fd;
+  --el-color-primary-light-9: #f1f1fe;
+  --el-color-primary-dark-2: #4848d6;
+  --el-border-radius-base: 10px;
+
+  --brand: #5b5bf0;
+  --brand-2: #7b6ef6;
+  --brand-3: #9b7df9;
+  --ink: #1f2233;
+  --ink-soft: #5a607a;
+  --ink-faint: #9aa0b8;
+  --line: #e8e9f3;
+  --surface: #ffffff;
+  --bg: #eef0fb;
+  --bg-2: #f6f7fd;
+
+  --shadow-sm: 0 8px 22px rgba(40, 44, 80, 0.06);
+  --shadow-md: 0 18px 44px rgba(40, 44, 80, 0.1);
+  --shadow-lg: 0 30px 70px rgba(40, 44, 80, 0.16);
+
+  --font-body: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(1100px 540px at 8% -8%, rgba(123, 110, 246, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 105% 6%, rgba(155, 125, 249, 0.14), transparent 55%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* 通用面板 */
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.panel-head h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+/* 页面通用栅格间距 */
+.page-stack {
+  display: grid;
+  gap: 20px;
+}
+
+/* 表格 */
+.data-table {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table .el-table__header th {
+  background: var(--bg-2);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* 表单 */
+.data-form .el-form-item {
+  margin-bottom: 16px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(91, 91, 240, 0.18);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 91, 240, 0.32);
+}
+
+/* 进入动画 */
+.fade-slide-enter-active {
+  transition: all 0.32s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}

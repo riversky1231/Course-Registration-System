@@ -2,7 +2,6 @@ package com.codeying.stuselect.service;
 
 import com.codeying.stuselect.common.Role;
 import com.codeying.stuselect.common.UserSession;
-import com.codeying.stuselect.common.PageResult;
 import com.codeying.stuselect.dto.DashboardInsights;
 import com.codeying.stuselect.model.Admin;
 import com.codeying.stuselect.model.Course;
@@ -18,7 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,8 +28,6 @@ public class DashboardService {
   private final StudentService studentService;
   private final CourseService courseService;
   private final SelectionService selectionService;
-  private final AdminAuditLogService adminAuditLogService;
-  private final NotificationService notificationService;
   private final SelectionWindowService selectionWindowService;
 
   public DashboardService(
@@ -41,8 +37,6 @@ public class DashboardService {
       StudentService studentService,
       CourseService courseService,
       SelectionService selectionService,
-      AdminAuditLogService adminAuditLogService,
-      NotificationService notificationService,
       SelectionWindowService selectionWindowService) {
     this.sessionService = sessionService;
     this.adminService = adminService;
@@ -50,8 +44,6 @@ public class DashboardService {
     this.studentService = studentService;
     this.courseService = courseService;
     this.selectionService = selectionService;
-    this.adminAuditLogService = adminAuditLogService;
-    this.notificationService = notificationService;
     this.selectionWindowService = selectionWindowService;
   }
 
@@ -66,8 +58,6 @@ public class DashboardService {
     result.put("students", studentService.count(session));
     result.put("courses", courseService.count(session));
     result.put("selections", selectionService.count(session));
-    result.put("auditLogs", current.getRole() == Role.ADMIN ? adminAuditLogService.count(session) : 0L);
-    result.put("notifications", notificationService.count(session));
     result.put(
         "selectionWindows", current.getRole() == Role.ADMIN ? selectionWindowService.count(session) : 0L);
     return result;

@@ -37,6 +37,14 @@ spring:
           max-idle: 8
           min-idle: 2
 
+# AI 能力配置（默认对接 DeepSeek，OpenAI 兼容接口）。
+# 未配置 api-key 时，AI 模块会返回示例内容以便联调，不会报错。
+ai:
+  base-url: ${AI_BASE_URL:https://api.deepseek.com}
+  api-key: ${DEEPSEEK_API_KEY:}
+  model: ${AI_MODEL:deepseek-chat}
+  timeout-ms: ${AI_TIMEOUT_MS:60000}
+
 logging:
   level:
     org.springframework.jdbc.core: info
