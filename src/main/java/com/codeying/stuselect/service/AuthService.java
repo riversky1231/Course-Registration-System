@@ -15,6 +15,7 @@ import com.codeying.stuselect.model.Admin;
 import com.codeying.stuselect.model.Student;
 import com.codeying.stuselect.model.Teacher;
 import jakarta.servlet.http.HttpSession;
+import java.time.Year;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -85,6 +86,8 @@ public class AuthService {
         student.setUsername(request.username());
         student.setPassword(passwordService.encode(request.password()));
         student.setSname("新学生");
+        student.setGrade(1);
+        student.setEnrollmentYear(Year.now().getValue());
         studentMapper.insert(student);
       }
     }

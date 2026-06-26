@@ -43,7 +43,11 @@ public class Student {
   private String smajor;
   @Size(max = 255, message = "班级长度不能超过255位")
   private String sclass;
+  @Min(value = 1, message = "学生年级不能小于1")
+  @Max(value = 8, message = "学生年级不能大于8")
   private Integer grade;
+  @Min(value = 1900, message = "入学年份不能早于1900")
+  @Max(value = 2100, message = "入学年份不能晚于2100")
   private Integer enrollmentYear;
 
   public String getId() {

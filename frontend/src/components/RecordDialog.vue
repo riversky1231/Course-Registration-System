@@ -37,6 +37,8 @@
           <el-col :xs="24" :sm="12"><el-form-item label="学院"><el-input v-model.trim="form.sdept" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="专业"><el-input v-model.trim="form.smajor" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="班级"><el-input v-model.trim="form.sclass" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="年级"><el-input-number v-model="form.grade" :min="1" :max="8" class="full-width" controls-position="right" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="入学年份"><el-input-number v-model="form.enrollmentYear" :min="1900" :max="2100" class="full-width" controls-position="right" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="出生日期"><el-date-picker v-model="form.sbirthday" type="date" value-format="YYYY-MM-DD" class="full-width" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model.trim="form.tele" maxlength="11" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="邮箱"><el-input v-model.trim="form.email" maxlength="255" /></el-form-item></el-col>

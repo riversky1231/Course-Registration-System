@@ -102,7 +102,22 @@ const mod = useModule(viewKey, {
   emptyForm: () =>
     isTeacher.value
       ? { username: "", password: "", numb: "", tname: "", tbirthday: "", tposition: "", ttel: "", age: null, gender: "男" }
-      : { username: "", password: "", numb: "", sname: "", sdept: "", sbirthday: "", tele: "", email: "", ssex: "男", age: null, smajor: "", sclass: "" },
+      : {
+          username: "",
+          password: "",
+          numb: "",
+          sname: "",
+          sdept: "",
+          sbirthday: "",
+          tele: "",
+          email: "",
+          ssex: "男",
+          age: null,
+          smajor: "",
+          sclass: "",
+          grade: 1,
+          enrollmentYear: new Date().getFullYear(),
+        },
   prepareForm: (form) => {
     if (isTeacher.value && form.tbirthday) form.tbirthday = formatDateInput(form.tbirthday);
     if (!isTeacher.value && form.sbirthday) form.sbirthday = formatDateInput(form.sbirthday);
@@ -142,6 +157,7 @@ function fields(person) {
   return [
     { label: "学号", value: safeText(person.numb) },
     { label: "学院", value: safeText(person.sdept) },
+    { label: "年级", value: person.grade ? `大${person.grade}` : "-" },
     { label: "班级", value: safeText(person.sclass) },
     { label: "邮箱", value: safeText(person.email) },
   ];

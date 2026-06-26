@@ -1,15 +1,16 @@
 package com.codeying.stuselect.selenium;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Duration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
@@ -46,7 +47,7 @@ public class StudentSelectionSeleniumTest {
    *
    * @throws SQLException when database cleanup fails
    */
-  @Before
+  @BeforeEach
   public void setUp() throws SQLException {
     resetSelectionData();
     driver = new ChromeDriver();
@@ -59,6 +60,7 @@ public class StudentSelectionSeleniumTest {
    * Verifies the student login and course selection flow.
    */
   @Test
+  @Disabled("Requires Chrome, MySQL seed data, and a running app at http://127.0.0.1:8081/")
   public void testStudentCreateSelectionFlow() {
     driver.get(BASE_URL);
     wait.until(
@@ -97,7 +99,7 @@ public class StudentSelectionSeleniumTest {
   /**
    * Closes the browser session after the test.
    */
-  @After
+  @AfterEach
   public void tearDown() {
     if (driver != null) {
       driver.quit();

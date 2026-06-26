@@ -1,6 +1,6 @@
 package com.codeying.stuselect.service;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -11,7 +11,7 @@ import com.codeying.stuselect.mapper.SelectionMapper;
 import com.codeying.stuselect.model.SelectionRecord;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SelectionServiceGradeReportJUnit4Test {
 

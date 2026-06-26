@@ -374,19 +374,7 @@ public class SelectionService {
       }
     }
 
-    // 校验3：时间冲突检测
-    if (StringUtils.hasText(course.getTimeSlot())) {
-      long conflictCount =
-          selectionMapper.countTimeSlotConflict(
-              studentId,
-              course.getTimeSlot(),
-              selectionId);
-      if (conflictCount > 0) {
-        throw new AppException(
-            HttpStatus.BAD_REQUEST,
-            "上课时间与已选课程冲突：" + course.getTimeSlot());
-      }
-    }
+    validateTimeSlotConflict(course, studentId, selectionId);
 
     // 计算学生当前GPA（用于学分上限校验）
     double currentGpa = calculateStudentGpa(studentId);
@@ -399,6 +387,31 @@ public class SelectionService {
         currentGpa);
 
     return course;
+  }
+
+  private void validateTimeSlotConflict(
+      final Course course,
+      final String studentId,
+      final String excludeSelectionId) {
+    if (!StringUtils.hasText(course.getTimeSlot())) {
+      return;
+    }
+    List<SelectionRecord> selections =
+        selectionMapper.selectJoinedList(null, studentId, null);
+    for (SelectionRecord selection : selections) {
+      if (selection == null || Objects.equals(selection.getId(), excludeSelectionId)) {
+        continue;
+      }
+      if (CourseTimeSlot.overlaps(course.getTimeSlot(), selection.getTimeSlot())) {
+        String conflictTime =
+            StringUtils.hasText(selection.getTimeSlot())
+                ? selection.getTimeSlot()
+                : course.getTimeSlot();
+        throw new AppException(
+            HttpStatus.BAD_REQUEST,
+            "上课时间与已选课程冲突：" + conflictTime);
+      }
+    }
   }
 
   /**

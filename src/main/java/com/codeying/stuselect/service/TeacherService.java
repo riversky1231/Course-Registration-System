@@ -93,6 +93,12 @@ public class TeacherService {
   public void delete(String id, HttpSession session) {
     sessionService.requireRole(session, Role.ADMIN);
     require(id);
+    if (teacherMapper.countCourseReferences(id) > 0) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "该教师已有授课课程，不能删除");
+    }
+    if (teacherMapper.countSelectionReferences(id) > 0) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "该教师已有选课记录，不能删除");
+    }
     teacherMapper.deleteById(id);
   }
 

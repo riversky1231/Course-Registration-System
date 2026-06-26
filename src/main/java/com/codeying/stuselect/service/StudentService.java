@@ -11,6 +11,7 @@ import com.codeying.stuselect.common.UserSession;
 import com.codeying.stuselect.mapper.StudentMapper;
 import com.codeying.stuselect.model.Student;
 import jakarta.servlet.http.HttpSession;
+import java.time.Year;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.cache.annotation.CacheEvict;
@@ -23,6 +24,8 @@ import org.springframework.util.StringUtils;
  */
 @Service
 public class StudentService {
+
+  private static final int DEFAULT_GRADE = 1;
 
   /** Student persistence mapper. */
   private final StudentMapper studentMapper;
@@ -70,6 +73,11 @@ public class StudentService {
           List.of(require(current.getId())),
           PageQuery.of(page, pageSize));
     }
+    if (current.getRole() == Role.TEACHER) {
+      return PageResult.of(
+          studentMapper.selectVisibleToTeacher(current.getId(), keyword),
+          PageQuery.of(page, pageSize));
+    }
     final LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<>();
     if (StringUtils.hasText(keyword)) {
       wrapper.and(
@@ -103,6 +111,9 @@ public class StudentService {
     if (current.getRole() == Role.STUDENT) {
       return List.of(require(current.getId()));
     }
+    if (current.getRole() == Role.TEACHER) {
+      return studentMapper.selectVisibleToTeacher(current.getId(), null);
+    }
     return studentMapper.selectList(
         new LambdaQueryWrapper<Student>().orderByDesc(Student::getId));
   }
@@ -121,6 +132,7 @@ public class StudentService {
     ensureUsernameAvailable(student.getUsername(), null);
     student.setId(IdGenerator.newId());
     student.setPassword(passwordService.encode(student.getPassword()));
+    fillStudentDefaults(student);
     studentMapper.insert(student);
     return studentMapper.selectById(student.getId());
   }
@@ -159,6 +171,9 @@ public class StudentService {
   public void delete(final String id, final HttpSession session) {
     sessionService.requireRole(session, Role.ADMIN);
     require(id);
+    if (studentMapper.countSelectionReferences(id) > 0) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "该学生已有选课记录，不能删除");
+    }
     studentMapper.deleteById(id);
   }
 
@@ -187,11 +202,16 @@ public class StudentService {
     final UserSession current =
         sessionService.requireRole(session, Role.STUDENT);
     final Student student = require(current.getId());
+    final Integer persistedGrade = student.getGrade();
+    final Integer persistedEnrollmentYear = student.getEnrollmentYear();
     final String nextUsername =
         defaultValue(input.getUsername(), student.getUsername());
     CredentialRules.requirePasswordIfProvided(input.getPassword());
     ensureUsernameAvailable(nextUsername, student.getId());
     mergeStudent(student, input);
+    student.setGrade(defaultInteger(persistedGrade, DEFAULT_GRADE));
+    student.setEnrollmentYear(
+        defaultInteger(persistedEnrollmentYear, Year.now().getValue()));
     studentMapper.updateById(student);
     return studentMapper.selectById(student.getId());
   }
@@ -204,9 +224,11 @@ public class StudentService {
    */
   public long count(final HttpSession session) {
     final UserSession current = sessionService.requireUser(session);
-    return current.getRole() == Role.ADMIN || current.getRole() == Role.TEACHER
-        ? studentMapper.selectCount(null)
-        : 1L;
+    return switch (current.getRole()) {
+      case ADMIN -> studentMapper.selectCount(null);
+      case TEACHER -> studentMapper.countVisibleToTeacher(current.getId());
+      case STUDENT -> 1L;
+    };
   }
 
   /**
@@ -264,10 +286,28 @@ public class StudentService {
     target.setAge(input.getAge());
     target.setSmajor(input.getSmajor());
     target.setSclass(input.getSclass());
+    target.setGrade(
+        defaultInteger(
+            input.getGrade(),
+            defaultInteger(target.getGrade(), DEFAULT_GRADE)));
+    target.setEnrollmentYear(
+        defaultInteger(
+            input.getEnrollmentYear(),
+            defaultInteger(target.getEnrollmentYear(), Year.now().getValue())));
   }
 
   private String defaultValue(final String input, final String fallback) {
     return StringUtils.hasText(input) ? input : fallback;
+  }
+
+  private Integer defaultInteger(final Integer input, final Integer fallback) {
+    return input == null ? fallback : input;
+  }
+
+  private void fillStudentDefaults(final Student student) {
+    student.setGrade(defaultInteger(student.getGrade(), DEFAULT_GRADE));
+    student.setEnrollmentYear(
+        defaultInteger(student.getEnrollmentYear(), Year.now().getValue()));
   }
 
   private void ensureUsernameAvailable(

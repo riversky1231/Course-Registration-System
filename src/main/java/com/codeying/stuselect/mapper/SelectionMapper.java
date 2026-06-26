@@ -148,26 +148,6 @@ public interface SelectionMapper extends BaseMapper<SelectionRecord> {
       @Param("studentId") String studentId,
       @Param("excludeId") String excludeId);
 
-  @Select(
-      """
-      <script>
-      select count(*)
-      from tb_sct s
-      inner join tb_course c on c.id = s.courseid
-      where s.studentId = #{studentId}
-        and c.time_slot is not null
-        and c.time_slot != ''
-        and c.time_slot = #{timeSlot}
-      <if test="excludeId != null and excludeId != ''">
-        and s.id != #{excludeId}
-      </if>
-      </script>
-      """)
-  long countTimeSlotConflict(
-      @Param("studentId") String studentId,
-      @Param("timeSlot") String timeSlot,
-      @Param("excludeId") String excludeId);
-
   @Update(
       """
       update tb_sct

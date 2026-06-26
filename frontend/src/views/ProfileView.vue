@@ -103,7 +103,8 @@ const summaryItems = computed(() => {
     { label: "学号", value: safeText(form.numb) },
     { label: "姓名", value: safeText(form.sname) },
     { label: "学院", value: safeText(form.sdept) },
-    { label: "班级", value: safeText(form.sclass) },
+    { label: "年级", value: form.grade ? `大${form.grade}` : "-" },
+    { label: "入学年份", value: safeText(form.enrollmentYear) },
   ];
 });
 

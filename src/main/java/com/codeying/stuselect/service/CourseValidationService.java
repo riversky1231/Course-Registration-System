@@ -55,8 +55,11 @@ public class CourseValidationService {
     }
 
     Student student = studentMapper.selectById(studentId);
-    if (student == null || student.getGrade() == null) {
-      return; // 学生信息不完整，跳过校验
+    if (student == null) {
+      throw new AppException(HttpStatus.NOT_FOUND, "学生不存在");
+    }
+    if (student.getGrade() == null) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "学生年级信息未维护，无法选修有年级限制的课程");
     }
 
     if (student.getGrade() < course.getGradeLimit()) {
@@ -87,6 +90,7 @@ public class CourseValidationService {
     }
     visited.add(courseId);
 
+    try {
     List<CoursePrerequisite> prerequisites = prerequisiteMapper.selectWithNamesByCourseId(courseId);
     if (prerequisites.isEmpty()) {
       return; // 没有先修要求
@@ -127,6 +131,9 @@ public class CourseValidationService {
 
       // 递归校验先修课程的先修课程（检测整个依赖链）
       validatePrerequisitesRecursive(prereq.getPrerequisiteCourseId(), studentId, visited);
+    }
+    } finally {
+      visited.remove(courseId);
     }
   }
 
