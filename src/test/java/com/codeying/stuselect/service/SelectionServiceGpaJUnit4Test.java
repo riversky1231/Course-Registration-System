@@ -9,7 +9,7 @@ public class SelectionServiceGpaJUnit4Test {
 
   private double invokeToGpa(final Double score) throws Exception {
     SelectionService service =
-        new SelectionService(null, null, null, null, null, null, null);
+        new SelectionService(null, null, null, null, null, null);
     Method method = SelectionService.class.getDeclaredMethod("toGpa", Double.class);
     method.setAccessible(true);
     return ((Double) method.invoke(service, score)).doubleValue();

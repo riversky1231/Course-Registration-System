@@ -3,12 +3,14 @@ package com.codeying.stuselect.common;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -34,6 +36,18 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<ApiResponse<Void>> handleConstraint(ConstraintViolationException ex) {
     return ResponseEntity.badRequest().body(ApiResponse.fail(ex.getMessage()));
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail("资源不存在"));
+  }
+
+  @ExceptionHandler(DataAccessException.class)
+  public ResponseEntity<ApiResponse<Void>> handleDataAccess(DataAccessException ex) {
+    logger.error("Database/Cache error occurred", ex);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(ApiResponse.fail("数据库/缓存操作失败：" + ex.getMostSpecificCause().getMessage()));
   }
 
   @ExceptionHandler(Exception.class)

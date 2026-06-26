@@ -48,6 +48,7 @@ ai:
 logging:
   level:
     org.springframework.jdbc.core: info
+    com.codeying.stuselect: debug
 
 management:
   endpoint:

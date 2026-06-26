@@ -23,7 +23,7 @@ public class SelectionServiceGradeReportJUnit4Test {
 
     SelectionService service =
         new SelectionService(
-            selectionMapper, null, null, new SessionService(), null, null, null);
+            selectionMapper, null, null, new SessionService(), null, null);
 
     StudentGradeReport report = service.gradeReport("Java", 1, 5, httpSession);
 
@@ -45,7 +45,7 @@ public class SelectionServiceGradeReportJUnit4Test {
 
     SelectionService service =
         new SelectionService(
-            selectionMapper, null, null, new SessionService(), null, null, null);
+            selectionMapper, null, null, new SessionService(), null, null);
 
     StudentGradeReport report = service.gradeReport("李老师", 1, 5, httpSession);
 
@@ -61,7 +61,7 @@ public class SelectionServiceGradeReportJUnit4Test {
 
     SelectionService service =
         new SelectionService(
-            selectionMapper, null, null, new SessionService(), null, null, null);
+            selectionMapper, null, null, new SessionService(), null, null);
 
     StudentGradeReport report = service.gradeReport("周三", 1, 5, httpSession);
 
@@ -80,7 +80,7 @@ public class SelectionServiceGradeReportJUnit4Test {
 
     SelectionService service =
         new SelectionService(
-            selectionMapper, null, null, new SessionService(), null, null, null);
+            selectionMapper, null, null, new SessionService(), null, null);
 
     StudentGradeReport report = service.gradeReport("", null, null, httpSession);
 
