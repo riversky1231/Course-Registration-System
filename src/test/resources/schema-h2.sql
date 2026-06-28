@@ -144,3 +144,18 @@ CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
     description VARCHAR(255)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_gpa_range ON tb_semester_credit_limit(min_gpa, max_gpa);
+
+CREATE TABLE IF NOT EXISTS tb_course_evaluation (
+    id VARCHAR(32) PRIMARY KEY,
+    course_id VARCHAR(32) NOT NULL,
+    student_id VARCHAR(32) NOT NULL,
+    teacher_id VARCHAR(32),
+    rating INT NOT NULL,
+    comment VARCHAR(500),
+    anonymous TINYINT DEFAULT 0,
+    create_time TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_course_evaluation ON tb_course_evaluation(course_id, student_id);
+CREATE INDEX IF NOT EXISTS idx_ce_course_id ON tb_course_evaluation(course_id);
+CREATE INDEX IF NOT EXISTS idx_ce_student_id ON tb_course_evaluation(student_id);
+CREATE INDEX IF NOT EXISTS idx_ce_teacher_id ON tb_course_evaluation(teacher_id);

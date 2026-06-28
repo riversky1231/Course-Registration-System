@@ -219,7 +219,7 @@ public class CourseService {
         && !current.getId().equals(course.getTid())) {
       throw new AppException(HttpStatus.FORBIDDEN, "只能删除自己的课程");
     }
-    if (selectionMapper.countByCourse(id, null) > 0) {
+    if (selectionMapper.countSelectionsByCourse(id) > 0) {
       throw new AppException(HttpStatus.BAD_REQUEST, "该课程已有学生选课，不能直接删除");
     }
     courseMapper.deleteById(id);
@@ -307,7 +307,7 @@ public class CourseService {
     if (course.getMaxStudents() == null || course.getMaxStudents() <= 0) {
       return true;
     }
-    return selectionMapper.countByCourse(course.getId(), null)
+    return selectionMapper.countSelectionsByCourse(course.getId())
         < course.getMaxStudents();
   }
 

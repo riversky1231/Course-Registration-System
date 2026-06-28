@@ -88,6 +88,15 @@ export const VIEW_META = {
     route: "/selection-windows",
     searchPlaceholder: "按窗口名称、类型或说明搜索",
   },
+  evaluations: {
+    key: "evaluations",
+    label: "课程评价",
+    caption: "评教中心",
+    description: "结课后对所修课程进行星级评分与评价，教师与管理员可查看评教结果与统计。",
+    icon: "Star",
+    route: "/evaluations",
+    searchPlaceholder: "按课程名称、评价内容或教师搜索",
+  },
 };
 
 export const ENDPOINTS = {
@@ -97,6 +106,7 @@ export const ENDPOINTS = {
   courses: "/api/courses",
   selections: "/api/selections",
   selectionWindows: "/api/selection-windows",
+  evaluations: "/api/evaluations",
 };
 
 export const ROLE_LABELS = {
@@ -134,10 +144,11 @@ export function getViewsForRole(role) {
       "courses",
       "selections",
       "selectionWindows",
+      "evaluations",
     ].map((key) => VIEW_META[key]);
   }
   if (role === "teacher") {
-    return ["dashboard", "assistant", "profile", "courses", "selections"].map(
+    return ["dashboard", "assistant", "profile", "courses", "selections", "evaluations"].map(
       (key) => VIEW_META[key]
     );
   }
@@ -149,6 +160,7 @@ export function getViewsForRole(role) {
       "gradeReport",
       "courses",
       "selections",
+      "evaluations",
     ].map((key) => VIEW_META[key]);
   }
   return [];

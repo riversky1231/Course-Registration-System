@@ -239,13 +239,14 @@ public class CourseValidationService {
    */
   public void validateCreditLimit(
       Course course, String studentId, String excludeSelectionId, double currentGPA) {
-    // 查询学生当前GPA对应的学分上限
-    // 修复GPA查询逻辑：应该是 minGpa <= currentGPA < maxGpa
+    // 查询学生当前GPA对应的学分上限：取 minGpa <= currentGPA 的最高一档。
+    // 各档位 GPA 区间是连续的（[0,2)、[2,3)、[3,3.5)、[3.5,上限]），因此“满足下限的最高档”
+    // 一定是正确档位；同时避免之前 maxGpa 上限“排他”导致满绩点（如 GPA=5.0）落空、
+    // 反而绕过学分上限的问题（学分上限是安全限制，必须始终命中某一档）。
     SemesterCreditLimit limit =
         creditLimitMapper.selectOne(
             new LambdaQueryWrapper<SemesterCreditLimit>()
                 .le(SemesterCreditLimit::getMinGpa, currentGPA)  // minGpa <= currentGPA
-                .gt(SemesterCreditLimit::getMaxGpa, currentGPA)  // maxGpa > currentGPA
                 .orderByDesc(SemesterCreditLimit::getMinGpa)
                 .last("LIMIT 1"));
 

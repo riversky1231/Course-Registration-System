@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /** AI 能力接口：选课助手对话、智能课程推荐、课程简介/大纲生成。 */
 @RestController
@@ -28,6 +29,12 @@ public class AiController {
   @PostMapping("/chat")
   public ApiResponse<AiChatResponse> chat(@RequestBody AiChatRequest request, HttpSession session) {
     return ApiResponse.success(aiService.chat(request, session));
+  }
+
+  /** 选课助手「流式」对话：以 SSE 持续返回增量内容，实现打字机效果。 */
+  @PostMapping(value = "/chat/stream", produces = "text/event-stream;charset=UTF-8")
+  public SseEmitter chatStream(@RequestBody AiChatRequest request, HttpSession session) {
+    return aiService.chatStream(request, session);
   }
 
   @GetMapping("/recommend")

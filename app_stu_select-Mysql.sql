@@ -139,6 +139,23 @@ CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
     UNIQUE KEY uk_gpa_range (min_gpa, max_gpa)
 ) COMMENT '学期学分上限配置表';
 
+-- ============ 新增：课程评价（评教）模块表 ============
+
+CREATE TABLE IF NOT EXISTS tb_course_evaluation (
+    id VARCHAR(32) PRIMARY KEY COMMENT '主键',
+    course_id VARCHAR(32) NOT NULL COMMENT '课程ID',
+    student_id VARCHAR(32) NOT NULL COMMENT '评价学生ID',
+    teacher_id VARCHAR(32) COMMENT '被评价教师ID（评价时课程的任课教师）',
+    rating INT NOT NULL COMMENT '评分：1~5星',
+    comment VARCHAR(500) COMMENT '评价内容',
+    anonymous TINYINT(1) DEFAULT 0 COMMENT '是否匿名：1=匿名,0=实名',
+    create_time DATETIME COMMENT '评价时间',
+    UNIQUE KEY uk_course_evaluation (course_id, student_id),
+    KEY idx_ce_course_id (course_id),
+    KEY idx_ce_student_id (student_id),
+    KEY idx_ce_teacher_id (teacher_id)
+) COMMENT '课程评价（评教）表';
+
 -- 所有演示账号初始密码均为 123456，但数据库中保存的是 BCrypt 哈希值。
 SET @seed_password_hash = '$2a$10$8e3/3cz9z0kg7NGotuPXy.fRUEr32fHqXyN6JvE9YHE.kO8JsRx7q';
 
@@ -156,7 +173,7 @@ name = VALUES(name),
 tele = VALUES(tele);
 
 -- ============ 演示数据：教师 ============
-INSERT INTO tb_teacher (id, usernamhe, password, numb, tname, tbirthday, tposition, ttel, age, gender) VALUES
+INSERT INTO tb_teacher (id, username, password, numb, tname, tbirthday, tposition, ttel, age, gender) VALUES
 ('T2001', 't_zhang', @seed_password_hash, '2024001', '张若琳', '1987-09-12 00:00:00', '教授', '13810010001', 36, '女'),
 ('T2002', 't_li', @seed_password_hash, '2024002', '李振华', '1985-03-21 00:00:00', '副教授', '13810010002', 39, '男'),
 ('T2003', 't_sun', @seed_password_hash, '2024003', '孙启明', '1990-01-16 00:00:00', '讲师', '13810010003', 34, '男')
@@ -265,7 +282,7 @@ INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, 
 ('C4008', 'Python Web开发', 3.5, 'K23008', 'T2003', 'Python Web框架应用', '信息工程学院', 50, '周四第3-4节', '专业选修', 2),
 ('C4009', '大学英语', 2.0, 'K23009', 'T2001', '通识英语课程', '外国语学院', 80, '周三第3-4节', '通识必修', NULL),
 ('C4010', '艺术鉴赏', 1.5, 'K23010', 'T2002', '艺术与美学入门', '艺术学院', 100, '周五第5-6节', '通识选修', NULL),
-('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 60, '周三第7-8节', '通识选修', NULL),
+('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 80, '周三第7-8节', '通识选修', NULL),
 ('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL)
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
@@ -446,3 +463,19 @@ start_time = VALUES(start_time),
 end_time = VALUES(end_time),
 enabled = VALUES(enabled),
 description = VALUES(description);
+
+-- ============ 演示数据：课程评价（仅针对已结课/已录入成绩的课程） ============
+INSERT INTO tb_course_evaluation (id, course_id, student_id, teacher_id, rating, comment, anonymous, create_time) VALUES
+('E7001', 'C4001', 'S3001', 'T2001', 5, '张老师讲得很细致，Java入门体验非常好', 0, '2024-07-01 10:00:00'),
+('E7002', 'C4002', 'S3001', 'T2002', 4, '数据结构内容扎实，作业偏多', 0, '2024-07-01 10:05:00'),
+('E7003', 'C4009', 'S3001', 'T2001', 4, '英语课氛围不错', 1, '2024-07-01 10:10:00'),
+('E7004', 'C4001', 'S3002', 'T2001', 4, '基础讲解清晰，希望多一些实战案例', 1, '2024-07-02 09:00:00'),
+('E7005', 'C4002', 'S3002', 'T2002', 3, '难度较大，节奏偏快', 0, '2024-07-02 09:05:00')
+ON DUPLICATE KEY UPDATE
+course_id = VALUES(course_id),
+student_id = VALUES(student_id),
+teacher_id = VALUES(teacher_id),
+rating = VALUES(rating),
+comment = VALUES(comment),
+anonymous = VALUES(anonymous),
+create_time = VALUES(create_time);

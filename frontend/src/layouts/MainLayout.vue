@@ -46,38 +46,47 @@
 
     <el-container class="main-container">
       <el-header class="topbar" height="64px">
-        <div class="topbar-title">
-          <span class="topbar-badge">{{ currentMeta.caption }}</span>
-          <h2>{{ currentMeta.label }}</h2>
-        </div>
-        <div class="topbar-right">
-          <el-tag type="warning" effect="light" round>{{ semesterLabel }}</el-tag>
-          <el-dropdown trigger="click" @command="onCommand">
-            <div class="user-pill">
-              <el-avatar :size="32" class="identity-avatar">{{ initial }}</el-avatar>
-              <div class="user-pill-copy">
-                <strong>{{ auth.displayName }}</strong>
-                <span>{{ auth.roleLabel }}</span>
+        <div class="topbar-inner">
+          <div class="topbar-title">
+            <span class="topbar-badge">{{ currentMeta.caption }}</span>
+            <h2>{{ currentMeta.label }}</h2>
+          </div>
+          <div class="topbar-right">
+            <el-tag type="warning" effect="light" round>{{ semesterLabel }}</el-tag>
+            <el-dropdown trigger="click" @command="onCommand">
+              <div class="user-pill">
+                <el-avatar :size="32" class="identity-avatar">{{ initial }}</el-avatar>
+                <div class="user-pill-copy">
+                  <strong>{{ auth.displayName }}</strong>
+                  <span>{{ auth.roleLabel }}</span>
+                </div>
+                <el-icon><ArrowDown /></el-icon>
               </div>
-              <el-icon><ArrowDown /></el-icon>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile" :icon="'User'">个人资料</el-dropdown-item>
-                <el-dropdown-item command="dashboard" :icon="'Histogram'">工作台</el-dropdown-item>
-                <el-dropdown-item command="logout" :icon="'SwitchButton'" divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile" :icon="'User'">个人资料</el-dropdown-item>
+                  <el-dropdown-item command="dashboard" :icon="'Histogram'">工作台</el-dropdown-item>
+                  <el-dropdown-item command="logout" :icon="'SwitchButton'" divided>退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </el-header>
 
       <el-main class="main-body">
-        <router-view v-slot="{ Component }">
-          <transition name="fade-slide" mode="out-in">
-            <component :is="Component" :key="route.path" />
-          </transition>
-        </router-view>
+        <div class="content-shell">
+          <router-view v-slot="{ Component }">
+            <transition name="fade-slide" mode="out-in">
+              <component :is="Component" :key="route.path" />
+            </transition>
+          </router-view>
+
+          <footer class="app-footer">
+            <span class="footer-dot"></span>
+            学生选课系统 · {{ semesterLabel }} · 用心服务每一次选课
+          </footer>
+        </div>
       </el-main>
     </el-container>
   </el-container>
@@ -258,11 +267,19 @@ onMounted(() => {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0 30px;
   background: rgba(255, 255, 255, 0.7);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(10px);
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
 }
 
 .topbar-title { display: flex; align-items: center; gap: 12px; }
@@ -295,6 +312,33 @@ onMounted(() => {
 .user-pill-copy span { font-size: 11px; color: var(--ink-soft); }
 
 .main-body { padding: 26px 30px 40px; }
+
+.content-shell {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-faint);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--brand), var(--brand-3));
+  box-shadow: 0 0 0 4px rgba(91, 91, 240, 0.12);
+}
 
 @media (max-width: 860px) {
   .sidebar { display: none; }

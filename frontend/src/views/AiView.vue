@@ -16,9 +16,10 @@
               <div class="chat-avatar" :class="msg.role">
                 <el-icon><component :is="msg.role === 'user' ? 'User' : 'MagicStick'" /></el-icon>
               </div>
-              <div class="chat-bubble">{{ msg.content }}</div>
+              <div v-if="msg.role === 'user'" class="chat-bubble">{{ msg.content }}</div>
+              <div v-else class="chat-bubble md" v-html="renderAssistant(msg, i)"></div>
             </div>
-            <div v-if="chatLoading" class="chat-row assistant">
+            <div v-if="chatLoading && !streaming" class="chat-row assistant">
               <div class="chat-avatar assistant"><el-icon><MagicStick /></el-icon></div>
               <div class="chat-bubble typing">正在思考…</div>
             </div>
@@ -134,10 +135,11 @@
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import PageHeader from "@/components/PageHeader.vue";
-import { aiApi } from "@/api";
+import { aiApi, streamAiChat } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { VIEW_META } from "@/constants/modules";
 import { formatNumber } from "@/utils/format";
+import { renderMarkdown } from "@/utils/markdown";
 
 const auth = useAuthStore();
 const meta = VIEW_META.assistant;
@@ -150,6 +152,8 @@ const aiConfigured = ref(true);
 const scrollEl = ref(null);
 const draft = ref("");
 const chatLoading = ref(false);
+const streaming = ref(false);
+const streamingIndex = ref(-1);
 const messages = reactive([
   { role: "assistant", content: `你好，${auth.displayName}！我是你的智能选课助手，可以根据你的选课数据给出建议。有什么想问的？` },
 ]);
@@ -169,6 +173,15 @@ function useSuggestion(text) {
   send();
 }
 
+// 助手气泡：Markdown 渲染；流式进行中的那条额外追加闪烁光标。
+function renderAssistant(msg, index) {
+  const html = renderMarkdown(msg.content);
+  if (streaming.value && index === streamingIndex.value) {
+    return `${html}<span class="stream-caret">▋</span>`;
+  }
+  return html;
+}
+
 async function scrollToBottom() {
   await nextTick();
   if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight;
@@ -177,19 +190,43 @@ async function scrollToBottom() {
 async function send() {
   const question = draft.value.trim();
   if (!question || chatLoading.value) return;
+  const history = messages.slice().map((m) => ({ role: m.role, content: m.content }));
   messages.push({ role: "user", content: question });
   draft.value = "";
   chatLoading.value = true;
+  streaming.value = false;
+  streamingIndex.value = -1;
   await scrollToBottom();
+
   try {
-    const history = messages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
-    const data = await aiApi.chat({ question, history });
-    aiConfigured.value = data.configured;
-    messages.push({ role: "assistant", content: data.reply });
+    const { configured } = await streamAiChat(
+      { question, history },
+      {
+        onDelta: (token) => {
+          if (!streaming.value) {
+            streaming.value = true;
+            messages.push({ role: "assistant", content: "" });
+            streamingIndex.value = messages.length - 1;
+          }
+          messages[streamingIndex.value].content += token;
+          scrollToBottom();
+        },
+      }
+    );
+    aiConfigured.value = configured;
+    if (streamingIndex.value < 0) {
+      messages.push({ role: "assistant", content: "（未收到内容，请重试）" });
+    }
   } catch (error) {
-    messages.push({ role: "assistant", content: `抱歉，出错了：${error.message}` });
+    if (streamingIndex.value >= 0) {
+      messages[streamingIndex.value].content += `\n\n（中断：${error.message}）`;
+    } else {
+      messages.push({ role: "assistant", content: `抱歉，出错了：${error.message}` });
+    }
   } finally {
     chatLoading.value = false;
+    streaming.value = false;
+    streamingIndex.value = -1;
     await scrollToBottom();
   }
 }
@@ -285,6 +322,61 @@ onMounted(scrollToBottom);
 }
 .chat-row.user .chat-bubble { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; border: none; }
 .chat-bubble.typing { color: var(--ink-faint); }
+
+.stream-caret {
+  display: inline-block;
+  margin-left: 1px;
+  color: var(--brand);
+  font-weight: 700;
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* 助手气泡内的 Markdown 排版 */
+.chat-bubble.md { white-space: normal; }
+.chat-bubble.md :deep(p) { margin: 0 0 8px; }
+.chat-bubble.md :deep(p:last-child) { margin-bottom: 0; }
+.chat-bubble.md :deep(ul),
+.chat-bubble.md :deep(ol) { margin: 6px 0 8px; padding-left: 20px; }
+.chat-bubble.md :deep(li) { margin: 3px 0; }
+.chat-bubble.md :deep(li > p) { margin: 0; }
+.chat-bubble.md :deep(strong) { color: var(--ink); font-weight: 700; }
+.chat-bubble.md :deep(h1),
+.chat-bubble.md :deep(h2),
+.chat-bubble.md :deep(h3),
+.chat-bubble.md :deep(h4) { margin: 10px 0 6px; font-size: 15px; line-height: 1.4; }
+.chat-bubble.md :deep(code) {
+  font-family: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+  font-size: 12.5px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--brand-3, #4338ca);
+}
+.chat-bubble.md :deep(pre) {
+  margin: 8px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  overflow-x: auto;
+}
+.chat-bubble.md :deep(pre code) { background: none; color: inherit; padding: 0; }
+.chat-bubble.md :deep(a) { color: var(--brand); text-decoration: underline; }
+.chat-bubble.md :deep(blockquote) {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--brand);
+  color: var(--ink-soft);
+  background: var(--bg-2);
+  border-radius: 0 8px 8px 0;
+}
+.chat-bubble.md :deep(table) { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+.chat-bubble.md :deep(th),
+.chat-bubble.md :deep(td) { border: 1px solid var(--line); padding: 6px 10px; }
 
 .chat-suggest { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 4px; }
 .suggest-chip { cursor: pointer; }

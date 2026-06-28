@@ -29,6 +29,7 @@ public class DashboardService {
   private final CourseService courseService;
   private final SelectionService selectionService;
   private final SelectionWindowService selectionWindowService;
+  private final CourseEvaluationService courseEvaluationService;
 
   public DashboardService(
       SessionService sessionService,
@@ -37,7 +38,8 @@ public class DashboardService {
       StudentService studentService,
       CourseService courseService,
       SelectionService selectionService,
-      SelectionWindowService selectionWindowService) {
+      SelectionWindowService selectionWindowService,
+      CourseEvaluationService courseEvaluationService) {
     this.sessionService = sessionService;
     this.adminService = adminService;
     this.teacherService = teacherService;
@@ -45,6 +47,7 @@ public class DashboardService {
     this.courseService = courseService;
     this.selectionService = selectionService;
     this.selectionWindowService = selectionWindowService;
+    this.courseEvaluationService = courseEvaluationService;
   }
 
   @Cacheable(cacheNames = "dashboardSummary", keyGenerator = "userSessionKeyGenerator")
@@ -58,6 +61,7 @@ public class DashboardService {
     result.put("students", studentService.count(session));
     result.put("courses", courseService.count(session));
     result.put("selections", selectionService.count(session));
+    result.put("evaluations", courseEvaluationService.count(session));
     result.put(
         "selectionWindows", current.getRole() == Role.ADMIN ? selectionWindowService.count(session) : 0L);
     return result;

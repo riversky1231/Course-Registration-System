@@ -90,7 +90,42 @@
       </div>
 
       <!-- 右列 -->
-      <div class="page-stack"></div>
+      <div class="page-stack">
+        <el-card class="panel" shadow="never">
+          <template #header>
+            <div class="panel-head">
+              <div><p class="eyebrow">提示</p><h3>智能工作提示</h3></div>
+              <el-icon class="head-glyph"><BellFilled /></el-icon>
+            </div>
+          </template>
+          <el-empty v-if="!notices.length" description="暂无提示" :image-size="80" />
+          <ul v-else class="notice-list">
+            <li v-for="(notice, idx) in notices" :key="idx">
+              <span class="notice-idx">{{ idx + 1 }}</span>
+              <span class="notice-text">{{ notice }}</span>
+            </li>
+          </ul>
+        </el-card>
+
+        <el-card v-if="courseSpotlights.length" class="panel" shadow="never">
+          <template #header>
+            <div class="panel-head">
+              <div><p class="eyebrow">热度</p><h3>热门课程榜</h3></div>
+              <el-icon class="head-glyph"><TrophyBase /></el-icon>
+            </div>
+          </template>
+          <div class="spot-list">
+            <div v-for="(course, idx) in courseSpotlights" :key="idx" class="spot-row">
+              <span class="spot-rank" :class="idx < 3 ? 'rank-top' : ''">{{ idx + 1 }}</span>
+              <div class="spot-main">
+                <strong>{{ course.title }}</strong>
+                <small>{{ course.subtitle }}</small>
+              </div>
+              <el-tag size="small" effect="light" round>{{ course.metric }}</el-tag>
+            </div>
+          </div>
+        </el-card>
+      </div>
     </div>
   </div>
 </template>
@@ -112,6 +147,8 @@ const insights = ref({});
 
 const recentSelections = computed(() => insights.value.recentSelections || []);
 const departmentSpotlights = computed(() => insights.value.departmentSpotlights || []);
+const notices = computed(() => insights.value.notices || []);
+const courseSpotlights = computed(() => (insights.value.courseSpotlights || []).slice(0, 5));
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -255,6 +292,42 @@ onMounted(load);
 .timeline-card strong { font-size: 14px; }
 .timeline-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; color: var(--ink-soft); font-size: 12px; }
 .timeline-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+.notice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.notice-list li { display: flex; gap: 10px; align-items: flex-start; }
+.notice-idx {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(91, 91, 240, 0.12);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.notice-text { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+
+.spot-list { display: grid; gap: 12px; }
+.spot-row { display: flex; align-items: center; gap: 12px; }
+.spot-rank {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--bg-2);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+.spot-rank.rank-top { background: linear-gradient(140deg, var(--brand), var(--brand-3)); color: #fff; }
+.spot-main { flex: 1; min-width: 0; }
+.spot-main strong { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spot-main small { color: var(--ink-faint); font-size: 12px; }
 
 @media (max-width: 1100px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

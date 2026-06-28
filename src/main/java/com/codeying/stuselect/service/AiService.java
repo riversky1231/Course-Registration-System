@@ -15,15 +15,22 @@ import com.codeying.stuselect.model.Student;
 import com.codeying.stuselect.service.AiClient.Message;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * AI 业务编排：把系统内的学生画像、选课数据与可选课程组装为上下文，
@@ -34,6 +41,7 @@ public class AiService {
 
   private static final int MAX_CANDIDATES = 30;
   private static final int MAX_HISTORY = 6;
+  private static final long STREAM_TIMEOUT_MS = 180_000L;
 
   private final AiClient aiClient;
   private final SessionService sessionService;
@@ -41,6 +49,15 @@ public class AiService {
   private final CourseService courseService;
   private final SelectionService selectionService;
   private final ObjectMapper objectMapper;
+
+  /** 流式对话的专用线程池：SseEmitter 需在请求线程外持续推送增量。 */
+  private final ExecutorService chatStreamExecutor =
+      Executors.newCachedThreadPool(
+          runnable -> {
+            Thread thread = new Thread(runnable, "ai-chat-stream");
+            thread.setDaemon(true);
+            return thread;
+          });
 
   public AiService(
       AiClient aiClient,
@@ -67,14 +84,66 @@ public class AiService {
     String question = request.question().trim();
 
     if (!aiClient.isConfigured()) {
-      return new AiChatResponse(
-          "（演示模式：尚未配置 AI 密钥）我是你的选课助手。配置 DEEPSEEK_API_KEY 后，"
-              + "我会结合你的年级、已修课程、GPA 和可选课程给出个性化建议。\n\n你的问题是：「"
-              + question
-              + "」",
-          false);
+      return new AiChatResponse(demoChatReply(question), false);
     }
 
+    List<Message> messages = buildChatMessages(request, session, current, question);
+    return new AiChatResponse(aiClient.chat(messages, false), true);
+  }
+
+  /**
+   * 「流式」选课助手对话：在请求线程内完成鉴权与上下文组装（依赖 HttpSession），
+   * 随后在独立线程中调用大模型流式接口，通过 {@link SseEmitter} 把增量 token
+   * 逐块推送给前端，实现打字机效果。
+   */
+  public SseEmitter chatStream(AiChatRequest request, HttpSession session) {
+    UserSession current = sessionService.requireUser(session);
+    if (request == null || !StringUtils.hasText(request.question())) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "请输入你的问题");
+    }
+    String question = request.question().trim();
+    SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
+
+    if (!aiClient.isConfigured()) {
+      String demo = demoChatReply(question);
+      chatStreamExecutor.execute(
+          () -> {
+            try {
+              emitDelta(emitter, demo);
+              emitDone(emitter, false);
+              emitter.complete();
+            } catch (Exception ex) {
+              emitter.completeWithError(ex);
+            }
+          });
+      return emitter;
+    }
+
+    List<Message> messages = buildChatMessages(request, session, current, question);
+    chatStreamExecutor.execute(
+        () -> {
+          try {
+            aiClient.chatStream(messages, token -> emitDelta(emitter, token));
+            emitDone(emitter, true);
+            emitter.complete();
+          } catch (Exception ex) {
+            String message =
+                ex instanceof AppException ? ex.getMessage() : "AI 流式服务暂不可用，请稍后再试";
+            emitError(emitter, message);
+          }
+        });
+    return emitter;
+  }
+
+  private String demoChatReply(String question) {
+    return "（演示模式：尚未配置 AI 密钥）我是你的选课助手。配置 DEEPSEEK_API_KEY 后，"
+        + "我会结合你的年级、已修课程、GPA 和可选课程给出个性化建议。\n\n你的问题是：「"
+        + question
+        + "」";
+  }
+
+  private List<Message> buildChatMessages(
+      AiChatRequest request, HttpSession session, UserSession current, String question) {
     List<Message> messages = new ArrayList<>();
     messages.add(
         Message.system(
@@ -95,8 +164,46 @@ public class AiService {
       }
     }
     messages.add(Message.user(question));
+    return messages;
+  }
 
-    return new AiChatResponse(aiClient.chat(messages, false), true);
+  private void emitDelta(SseEmitter emitter, String token) {
+    try {
+      emitter.send(
+          SseEmitter.event()
+              .name("delta")
+              .data(Map.of("content", token), MediaType.APPLICATION_JSON));
+    } catch (IOException ex) {
+      throw new IllegalStateException("推送增量失败", ex);
+    }
+  }
+
+  private void emitDone(SseEmitter emitter, boolean configured) {
+    try {
+      emitter.send(
+          SseEmitter.event()
+              .name("done")
+              .data(Map.of("configured", configured), MediaType.APPLICATION_JSON));
+    } catch (IOException ex) {
+      throw new IllegalStateException("推送结束事件失败", ex);
+    }
+  }
+
+  private void emitError(SseEmitter emitter, String message) {
+    try {
+      emitter.send(
+          SseEmitter.event()
+              .name("error")
+              .data(Map.of("message", message), MediaType.APPLICATION_JSON));
+      emitter.complete();
+    } catch (IOException ex) {
+      emitter.completeWithError(ex);
+    }
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    chatStreamExecutor.shutdownNow();
   }
 
   // ==================== 智能课程推荐 ====================

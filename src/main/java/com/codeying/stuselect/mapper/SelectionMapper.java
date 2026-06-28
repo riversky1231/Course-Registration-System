@@ -116,6 +116,15 @@ public interface SelectionMapper extends BaseMapper<SelectionRecord> {
       """)
   long countByCourse(@Param("courseId") String courseId, @Param("excludeId") String excludeId);
 
+  /**
+   * 统计课程已选人数（不加行锁）。
+   *
+   * <p>仅用于课程列表、可选判断、删除前的引用检查等只读场景；容量并发控制
+   * 仍由 {@link #countByCourse} 的 {@code FOR UPDATE} 版本在事务内负责。
+   */
+  @Select("select count(*) from tb_sct where courseid = #{courseId}")
+  long countSelectionsByCourse(@Param("courseId") String courseId);
+
   @Select(
       """
       <script>
