@@ -12,7 +12,7 @@ export const useAuthStore = defineStore("auth", {
   getters: {
     isAuthenticated: (state) => Boolean(state.session),
     role: (state) => state.session?.role || "",
-    roleLabel: (state) => ROLE_LABELS[state.session?.role] || "校园工作台",
+    roleLabel: (state) => ROLE_LABELS[state.session?.role] || "课程资源工作台",
     displayName: (state) => safeText(state.session?.displayName || state.session?.username, "用户"),
   },
   actions: {

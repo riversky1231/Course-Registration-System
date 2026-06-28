@@ -162,7 +162,7 @@ const greeting = computed(() => {
 
 const primaryAction = computed(() => {
   if (auth.role === "admin") return { label: "进入课程中心", route: "/courses", icon: "Notebook" };
-  if (auth.role === "teacher") return { label: "录入课程成绩", route: "/selections", icon: "EditPen" };
+  if (auth.role === "teacher") return { label: "录入课程成绩", route: "/courses", icon: "EditPen" };
   return { label: "浏览课程中心", route: "/courses", icon: "Notebook" };
 });
 

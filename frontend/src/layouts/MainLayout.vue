@@ -2,10 +2,10 @@
   <el-container class="workspace">
     <el-aside class="sidebar" width="264px">
       <div class="sidebar-brand">
-        <span class="brand-mark">SC</span>
+        <span class="brand-mark">CR</span>
         <div class="brand-copy">
-          <p class="eyebrow">Student Course System</p>
-          <h2>学生选课系统</h2>
+          <p class="eyebrow">Course Resource Platform</p>
+          <h2>选课与课程资源管理系统</h2>
         </div>
       </div>
 
@@ -22,13 +22,7 @@
           <el-menu-item v-for="view in views" :key="view.key" :index="view.route">
             <el-icon><component :is="view.icon" /></el-icon>
             <span class="nav-label">{{ view.label }}</span>
-            <el-badge
-              v-if="summary[view.key] !== undefined"
-              :value="summary[view.key]"
-              :max="999"
-              :show-zero="false"
-              class="nav-badge"
-            />
+            <span v-if="navCount(view.key)" class="nav-count">{{ navCount(view.key) }}</span>
           </el-menu-item>
         </el-menu>
       </el-scrollbar>
@@ -84,7 +78,7 @@
 
           <footer class="app-footer">
             <span class="footer-dot"></span>
-            学生选课系统 · {{ semesterLabel }} · 用心服务每一次选课
+            选课与课程资源管理系统 · {{ semesterLabel }} · 统筹课程资源与选课服务
           </footer>
         </div>
       </el-main>
@@ -120,6 +114,14 @@ const summaryChips = computed(() => [
   { label: "选课", value: summary.selections ?? 0, icon: "Tickets" },
   { label: "待录成绩", value: summary.pendingGrades ?? 0, icon: "EditPen" },
 ]);
+
+function navCount(key) {
+  const value = Number(summary[key] ?? 0);
+  if (!Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+  return value > 999 ? "999+" : String(value);
+}
 
 async function loadSummary() {
   try {
@@ -232,7 +234,36 @@ onMounted(() => {
 
 .nav-menu .el-menu-item.is-active .el-icon { color: #fff; }
 .nav-label { flex: 1; }
-.nav-badge { margin-left: auto; }
+
+.nav-count {
+  margin-left: auto;
+  min-width: 28px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(91, 91, 240, 0.16);
+  background: rgba(91, 91, 240, 0.09);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.nav-menu .el-menu-item:hover .nav-count {
+  background: rgba(91, 91, 240, 0.14);
+  border-color: rgba(91, 91, 240, 0.22);
+}
+
+.nav-menu .el-menu-item.is-active .nav-count {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.34);
+  box-shadow: none;
+}
 
 .sidebar-summary { display: grid; gap: 10px; }
 

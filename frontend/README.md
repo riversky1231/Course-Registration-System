@@ -1,6 +1,6 @@
-# 学生选课系统 · 前端（前后端分离）
+# 选课与课程资源管理系统 · 前端（前后端分离）
 
-基于 **Vue 3 + Vite + Element Plus + Pinia + Vue Router + axios** 的独立前端工程，与 Spring Boot 后端通过 `/api` 接口对接。
+基于 **Vue 3 + Vite + Element Plus + Pinia + Vue Router + axios** 的选课与课程资源管理前端工程，与 Spring Boot 后端通过 `/api` 接口对接。
 
 ## 技术栈
 

@@ -7,16 +7,16 @@
     <div class="auth-layout">
       <div class="auth-card">
         <div class="auth-logo">
-          <span class="auth-logo-mark">SC</span>
+          <span class="auth-logo-mark">CR</span>
           <div>
-            <p class="eyebrow">Student Course System</p>
-            <h3>学生选课系统</h3>
+            <p class="eyebrow">Course Resource Platform</p>
+            <h3>选课与课程资源管理系统</h3>
           </div>
         </div>
         <div class="auth-card-head">
           <p class="eyebrow">Portal Access</p>
           <h2>{{ mode === "login" ? "登录系统" : "注册账号" }}</h2>
-          <p>{{ mode === "login" ? "请输入账号、密码并选择身份进入系统。" : "创建新的学生账号以进入选课平台。" }}</p>
+          <p>{{ mode === "login" ? "请输入账号、密码并选择身份进入系统。" : "创建新的学生账号以进入课程资源平台。" }}</p>
         </div>
 
         <el-radio-group v-model="mode" class="auth-switch" size="large">
@@ -39,7 +39,7 @@
             </el-select>
           </el-form-item>
           <el-button class="auth-submit" type="primary" size="large" native-type="submit" :loading="pending" round>
-            进入学生选课系统
+            进入选课与课程资源管理系统
           </el-button>
         </el-form>
 
