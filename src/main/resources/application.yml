@@ -10,7 +10,7 @@ server:
 
 spring:
   application:
-    name: 学生选课系统
+    name: 选课与课程资源管理系统
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/app_stu_select?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false}

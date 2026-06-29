@@ -3,23 +3,56 @@ package com.codeying.stuselect.service;
 import com.codeying.stuselect.common.AppException;
 import com.codeying.stuselect.common.Role;
 import com.codeying.stuselect.common.UserSession;
+import com.codeying.stuselect.mapper.AdminMapper;
+import com.codeying.stuselect.mapper.StudentMapper;
+import com.codeying.stuselect.mapper.TeacherMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
 
 @Service
 public class SessionService {
 
   public static final String LOGIN_USER = "LOGIN_USER";
 
+  private final AdminMapper adminMapper;
+  private final TeacherMapper teacherMapper;
+  private final StudentMapper studentMapper;
+
+  public SessionService() {
+    this(null, null, null);
+  }
+
+  @Autowired
+  public SessionService(
+      AdminMapper adminMapper,
+      TeacherMapper teacherMapper,
+      StudentMapper studentMapper) {
+    this.adminMapper = adminMapper;
+    this.teacherMapper = teacherMapper;
+    this.studentMapper = studentMapper;
+  }
+
   public UserSession current(HttpSession session) {
     if (session == null) {
       return null;
     }
-    return (UserSession) session.getAttribute(LOGIN_USER);
+    try {
+      Object value = session.getAttribute(LOGIN_USER);
+      if (!(value instanceof UserSession user)) {
+        return null;
+      }
+      if (!isAccountActive(user)) {
+        clear(session);
+        return null;
+      }
+      return user;
+    } catch (IllegalStateException ex) {
+      return null;
+    }
   }
 
   public UserSession requireUser(HttpSession session) {
@@ -74,5 +107,19 @@ public class SessionService {
         // 会话已失效，忽略
       }
     }
+  }
+
+  private boolean isAccountActive(UserSession user) {
+    if (user == null || user.getRole() == null || user.getId() == null) {
+      return false;
+    }
+    if (adminMapper == null || teacherMapper == null || studentMapper == null) {
+      return true;
+    }
+    return switch (user.getRole()) {
+      case ADMIN -> adminMapper.selectById(user.getId()) != null;
+      case TEACHER -> teacherMapper.selectById(user.getId()) != null;
+      case STUDENT -> studentMapper.selectById(user.getId()) != null;
+    };
   }
 }

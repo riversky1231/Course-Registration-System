@@ -142,6 +142,7 @@ public class CourseService {
     course.setDept(normalizeDept(course.getDept()));
     course.setMaxStudents(normalizeMaxStudents(course.getMaxStudents()));
     course.setTimeSlot(normalizeTimeSlot(course.getTimeSlot()));
+    course.setCourseType(normalizeCourseType(course.getCourseType()));
     course.setId(IdGenerator.newId());
     courseMapper.insert(course);
     return courseMapper.selectByIdWithTeacher(course.getId());
@@ -196,6 +197,11 @@ public class CourseService {
         input.getTimeSlot() != null
             ? normalizeTimeSlot(input.getTimeSlot())
             : course.getTimeSlot());
+    course.setCourseType(
+        input.getCourseType() != null
+            ? normalizeCourseType(input.getCourseType())
+            : course.getCourseType());
+    course.setGradeLimit(input.getGradeLimit());
     courseMapper.updateById(course);
     if (!Objects.equals(previousTeacherId, course.getTid())) {
       selectionMapper.updateTeacherByCourseId(course.getId(), course.getTid());
@@ -283,6 +289,10 @@ public class CourseService {
   }
 
   private String normalizeTimeSlot(final String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  private String normalizeCourseType(final String value) {
     return StringUtils.hasText(value) ? value.trim() : null;
   }
 

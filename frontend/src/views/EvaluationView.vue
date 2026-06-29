@@ -12,6 +12,7 @@
           @keyup.enter="search"
           @clear="search"
         />
+        <el-button v-if="!isStudent" :icon="'Search'" @click="search">搜索</el-button>
         <el-select
           v-if="!isStudent"
           v-model="courseFilter"

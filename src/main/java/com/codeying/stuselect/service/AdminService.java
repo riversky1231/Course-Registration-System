@@ -102,8 +102,14 @@ public class AdminService {
 
   @CacheEvict(cacheNames = {"dashboardSummary", "dashboardInsights"}, allEntries = true)
   public void delete(String id, HttpSession session) {
-    sessionService.requireRole(session, Role.ADMIN);
+    UserSession actor = sessionService.requireRole(session, Role.ADMIN);
     require(id);
+    if (actor.getId().equals(id)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "不能删除当前登录的管理员账号");
+    }
+    if (adminMapper.selectCount(null) <= 1) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "至少需要保留一个管理员账号");
+    }
     adminMapper.deleteById(id);
   }
 

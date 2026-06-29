@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleDataAccess(DataAccessException ex) {
     logger.error("Database/Cache error occurred", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(ApiResponse.fail("数据库/缓存操作失败：" + ex.getMostSpecificCause().getMessage()));
+        .body(ApiResponse.fail("数据库/缓存操作失败，请稍后重试"));
   }
 
   @ExceptionHandler(Exception.class)

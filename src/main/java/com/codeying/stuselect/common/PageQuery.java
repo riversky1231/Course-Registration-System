@@ -14,6 +14,7 @@ public record PageQuery(int page, int pageSize) {
   }
 
   public int offset() {
-    return (page - 1) * pageSize;
+    long offset = (long) (page - 1) * pageSize;
+    return offset > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) offset;
   }
 }

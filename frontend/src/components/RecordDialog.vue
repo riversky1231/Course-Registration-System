@@ -52,6 +52,8 @@
           <el-col :xs="24" :sm="12"><el-form-item label="开课学院"><el-input v-model.trim="form.dept" maxlength="255" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="学分"><el-input-number v-model="form.score" :min="0" :max="100" :step="0.5" class="full-width" controls-position="right" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="容量上限"><el-input-number v-model="form.maxStudents" :min="0" :step="1" class="full-width" controls-position="right" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="课程类型"><el-input v-model.trim="form.courseType" maxlength="64" placeholder="如：专业必修" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="年级限制"><el-input-number v-model="form.gradeLimit" :min="1" :max="8" class="full-width" controls-position="right" placeholder="不限" /></el-form-item></el-col>
           <el-col v-if="role === 'admin'" :xs="24" :sm="12">
             <el-form-item label="授课教师">
               <el-select v-model="form.tid" class="full-width" placeholder="待安排" clearable filterable>

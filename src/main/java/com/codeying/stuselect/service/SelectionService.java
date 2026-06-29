@@ -194,17 +194,19 @@ public class SelectionService {
       final HttpSession session) {
     UserSession current =
         sessionService.requireRole(session, Role.ADMIN, Role.TEACHER);
+    if (record == null) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "请求内容不能为空");
+    }
     SelectionRecord existed = require(id);
     if (current.getRole() == Role.TEACHER) {
       if (!current.getId().equals(existed.getTeacherId())) {
         throw new AppException(HttpStatus.FORBIDDEN, "只能修改自己负责的选课记录");
       }
-      SelectionRecord update = new SelectionRecord();
-      update.setId(id);
-      update.setScore(record.getScore());
-      update.setGraded(record.getScore() != null);
-      selectionMapper.updateById(update);
-      return selectionMapper.selectJoinedById(id);
+      return updateScoreOnly(id, record.getScore());
+    }
+
+    if (isScoreOnlyUpdate(record, existed)) {
+      return updateScoreOnly(id, record.getScore());
     }
 
     Course course =
@@ -219,6 +221,27 @@ public class SelectionService {
     update.setTeacherId(course.getTid());
     update.setScore(record.getScore());
     update.setGraded(record.getScore() != null);
+    selectionMapper.updateById(update);
+    return selectionMapper.selectJoinedById(id);
+  }
+
+  private boolean isScoreOnlyUpdate(
+      final SelectionRecord record,
+      final SelectionRecord existed) {
+    boolean noSelectionFields =
+        !StringUtils.hasText(record.getCourseId())
+            && !StringUtils.hasText(record.getStudentId());
+    boolean sameSelectionFields =
+        Objects.equals(record.getCourseId(), existed.getCourseId())
+            && Objects.equals(record.getStudentId(), existed.getStudentId());
+    return noSelectionFields || sameSelectionFields;
+  }
+
+  private SelectionRecord updateScoreOnly(final String id, final Double score) {
+    SelectionRecord update = new SelectionRecord();
+    update.setId(id);
+    update.setScore(score);
+    update.setGraded(score != null);
     selectionMapper.updateById(update);
     return selectionMapper.selectJoinedById(id);
   }

@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS tb_admin (
     name VARCHAR(18),
     tele VARCHAR(11)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_admin_username ON tb_admin(username);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_admin_username ON tb_admin (username);
 
 CREATE TABLE IF NOT EXISTS tb_teacher (
     id VARCHAR(32) PRIMARY KEY,
@@ -21,7 +22,8 @@ CREATE TABLE IF NOT EXISTS tb_teacher (
     age INT,
     gender VARCHAR(10)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_teacher_username ON tb_teacher(username);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_teacher_username ON tb_teacher (username);
 
 CREATE TABLE IF NOT EXISTS tb_student (
     id VARCHAR(32) PRIMARY KEY,
@@ -40,7 +42,8 @@ CREATE TABLE IF NOT EXISTS tb_student (
     grade INT,
     enrollment_year INT
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_student_username ON tb_student(username);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_student_username ON tb_student (username);
 
 CREATE TABLE IF NOT EXISTS tb_course (
     id VARCHAR(32) PRIMARY KEY,
@@ -55,7 +58,8 @@ CREATE TABLE IF NOT EXISTS tb_course (
     course_type VARCHAR(64),
     grade_limit INT
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_course_numb ON tb_course(numb);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_course_numb ON tb_course (numb);
 
 CREATE TABLE IF NOT EXISTS tb_sct (
     id VARCHAR(32) PRIMARY KEY,
@@ -66,10 +70,14 @@ CREATE TABLE IF NOT EXISTS tb_sct (
     graded TINYINT DEFAULT 0,
     createtime TIMESTAMP
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_sct_course_student ON tb_sct(courseid, studentId);
-CREATE INDEX IF NOT EXISTS idx_tb_sct_courseid ON tb_sct(courseid);
-CREATE INDEX IF NOT EXISTS idx_tb_sct_studentid ON tb_sct(studentId);
-CREATE INDEX IF NOT EXISTS idx_tb_sct_teaid ON tb_sct(teaid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tb_sct_course_student ON tb_sct (courseid, studentId);
+
+CREATE INDEX IF NOT EXISTS idx_tb_sct_courseid ON tb_sct (courseid);
+
+CREATE INDEX IF NOT EXISTS idx_tb_sct_studentid ON tb_sct (studentId);
+
+CREATE INDEX IF NOT EXISTS idx_tb_sct_teaid ON tb_sct (teaid);
 
 CREATE TABLE IF NOT EXISTS tb_admin_audit_log (
     id VARCHAR(32) PRIMARY KEY,
@@ -114,9 +122,15 @@ CREATE TABLE IF NOT EXISTS tb_course_prerequisite (
     prerequisite_course_id VARCHAR(32) NOT NULL,
     min_score DOUBLE DEFAULT 60
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_course_prerequisite ON tb_course_prerequisite(course_id, prerequisite_course_id);
-CREATE INDEX IF NOT EXISTS idx_cp_course_id ON tb_course_prerequisite(course_id);
-CREATE INDEX IF NOT EXISTS idx_cp_prerequisite_course_id ON tb_course_prerequisite(prerequisite_course_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_course_prerequisite ON tb_course_prerequisite (
+    course_id,
+    prerequisite_course_id
+);
+
+CREATE INDEX IF NOT EXISTS idx_cp_course_id ON tb_course_prerequisite (course_id);
+
+CREATE INDEX IF NOT EXISTS idx_cp_prerequisite_course_id ON tb_course_prerequisite (prerequisite_course_id);
 
 CREATE TABLE IF NOT EXISTS tb_course_mutex (
     id VARCHAR(32) PRIMARY KEY,
@@ -124,9 +138,12 @@ CREATE TABLE IF NOT EXISTS tb_course_mutex (
     course_id_b VARCHAR(32) NOT NULL,
     reason VARCHAR(255)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_course_mutex ON tb_course_mutex(course_id_a, course_id_b);
-CREATE INDEX IF NOT EXISTS idx_cm_course_id_a ON tb_course_mutex(course_id_a);
-CREATE INDEX IF NOT EXISTS idx_cm_course_id_b ON tb_course_mutex(course_id_b);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_course_mutex ON tb_course_mutex (course_id_a, course_id_b);
+
+CREATE INDEX IF NOT EXISTS idx_cm_course_id_a ON tb_course_mutex (course_id_a);
+
+CREATE INDEX IF NOT EXISTS idx_cm_course_id_b ON tb_course_mutex (course_id_b);
 
 CREATE TABLE IF NOT EXISTS tb_course_type_limit (
     id VARCHAR(32) PRIMARY KEY,
@@ -134,7 +151,8 @@ CREATE TABLE IF NOT EXISTS tb_course_type_limit (
     max_courses INT NOT NULL,
     description VARCHAR(255)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_course_type ON tb_course_type_limit(course_type);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_course_type ON tb_course_type_limit (course_type);
 
 CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
     id VARCHAR(32) PRIMARY KEY,
@@ -143,7 +161,8 @@ CREATE TABLE IF NOT EXISTS tb_semester_credit_limit (
     max_credits DOUBLE NOT NULL,
     description VARCHAR(255)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_gpa_range ON tb_semester_credit_limit(min_gpa, max_gpa);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_gpa_range ON tb_semester_credit_limit (min_gpa, max_gpa);
 
 CREATE TABLE IF NOT EXISTS tb_course_evaluation (
     id VARCHAR(32) PRIMARY KEY,
@@ -155,7 +174,11 @@ CREATE TABLE IF NOT EXISTS tb_course_evaluation (
     anonymous TINYINT DEFAULT 0,
     create_time TIMESTAMP
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_course_evaluation ON tb_course_evaluation(course_id, student_id);
-CREATE INDEX IF NOT EXISTS idx_ce_course_id ON tb_course_evaluation(course_id);
-CREATE INDEX IF NOT EXISTS idx_ce_student_id ON tb_course_evaluation(student_id);
-CREATE INDEX IF NOT EXISTS idx_ce_teacher_id ON tb_course_evaluation(teacher_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_course_evaluation ON tb_course_evaluation (course_id, student_id);
+
+CREATE INDEX IF NOT EXISTS idx_ce_course_id ON tb_course_evaluation (course_id);
+
+CREATE INDEX IF NOT EXISTS idx_ce_student_id ON tb_course_evaluation (student_id);
+
+CREATE INDEX IF NOT EXISTS idx_ce_teacher_id ON tb_course_evaluation (teacher_id);

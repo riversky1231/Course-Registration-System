@@ -50,7 +50,10 @@ public class DashboardService {
     this.courseEvaluationService = courseEvaluationService;
   }
 
-  @Cacheable(cacheNames = "dashboardSummary", keyGenerator = "userSessionKeyGenerator")
+  @Cacheable(
+      cacheNames = "dashboardSummary",
+      keyGenerator = "userSessionKeyGenerator",
+      condition = "@sessionService.current(#session) != null")
   public Map<String, Object> summary(HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     Map<String, Object> result = new LinkedHashMap<>();
@@ -67,7 +70,10 @@ public class DashboardService {
     return result;
   }
 
-  @Cacheable(cacheNames = "dashboardInsights", keyGenerator = "userSessionKeyGenerator")
+  @Cacheable(
+      cacheNames = "dashboardInsights",
+      keyGenerator = "userSessionKeyGenerator",
+      condition = "@sessionService.current(#session) != null")
   public DashboardInsights insights(HttpSession session) {
     UserSession current = sessionService.requireUser(session);
     List<Admin> admins =

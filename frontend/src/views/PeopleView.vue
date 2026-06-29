@@ -11,6 +11,7 @@
           @keyup.enter="mod.search"
           @clear="mod.search"
         />
+        <el-button :icon="'Search'" @click="mod.search">搜索</el-button>
         <el-button v-if="allowCreate" type="primary" :icon="'Plus'" @click="mod.openCreate">
           {{ isTeacher ? "新增教师" : "新增学生" }}
         </el-button>

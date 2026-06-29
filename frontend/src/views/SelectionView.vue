@@ -11,6 +11,7 @@
           @keyup.enter="mod.search"
           @clear="mod.search"
         />
+        <el-button :icon="'Search'" @click="mod.search">搜索</el-button>
         <el-button v-if="allowCreate" type="primary" :icon="'Plus'" @click="mod.openCreate">
           {{ auth.role === "student" ? "发起选课" : "新增选课" }}
         </el-button>

@@ -120,7 +120,7 @@
               <div class="syllabus-block">
                 <strong>教学大纲</strong>
                 <ol class="syllabus-outline">
-                  <li v-for="(line, i) in syllabus.outline" :key="i">{{ line }}</li>
+                  <li v-for="(line, i) in normalizedSyllabusOutline" :key="i">{{ line }}</li>
                 </ol>
               </div>
             </div>
@@ -252,6 +252,26 @@ async function loadRecommend() {
 const syllabusLoading = ref(false);
 const syllabus = ref(null);
 const syllabusForm = reactive({ courseName: "", keywords: "" });
+const normalizedSyllabusOutline = computed(() =>
+  (syllabus.value?.outline || [])
+    .map(normalizeOutlineLine)
+    .filter(Boolean)
+);
+
+function normalizeOutlineLine(line) {
+  let result = String(line || "").trim();
+  let previous = "";
+  while (result && result !== previous) {
+    previous = result;
+    result = result
+      .replace(/^\s*\(?\d{1,2}\)?[.、．)]\s*/, "")
+      .replace(/^\s*[（(][一二三四五六七八九十]+[）)]\s*/, "")
+      .replace(/^\s*[一二三四五六七八九十]+[、.．]\s*/, "")
+      .replace(/^\s*[-*•]\s*/, "")
+      .trim();
+  }
+  return result;
+}
 
 async function loadSyllabus() {
   if (!syllabusForm.courseName.trim()) return ElMessage.warning("请填写课程名称");
@@ -278,7 +298,7 @@ async function copyText(text) {
 
 function copyAll() {
   if (!syllabus.value) return;
-  const text = `课程简介：\n${syllabus.value.jianjie}\n\n教学大纲：\n${(syllabus.value.outline || [])
+  const text = `课程简介：\n${syllabus.value.jianjie}\n\n教学大纲：\n${normalizedSyllabusOutline.value
     .map((line, i) => `${i + 1}. ${line}`)
     .join("\n")}`;
   copyText(text);

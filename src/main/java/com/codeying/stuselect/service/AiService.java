@@ -276,7 +276,8 @@ public class AiService {
                 "你是大学课程教学设计助手。根据课程名称与关键词，生成中文课程简介与教学大纲。"
                     + "必须只输出一个 JSON 对象，格式："
                     + "{\"jianjie\":\"不超过200字的课程简介\",\"outline\":[\"要点1\",\"要点2\"]}。"
-                    + "outline 建议 6-10 条，覆盖从导论到考核的完整教学安排。"),
+                    + "outline 建议 6-10 条，覆盖从导论到考核的完整教学安排；"
+                    + "每个 outline 项只写正文，不要包含数字序号、项目符号或列表前缀。"),
             Message.user("课程名称：" + courseName + "\n关键词：" + (keywords.isBlank() ? "无" : keywords)));
 
     String json = aiClient.chat(messages, true);
@@ -417,14 +418,34 @@ public class AiService {
       String jianjie = root.path("jianjie").asText("");
       List<String> outline = new ArrayList<>();
       for (JsonNode node : root.path("outline")) {
-        if (StringUtils.hasText(node.asText())) {
-          outline.add(node.asText());
+        String line = normalizeOutlineLine(node.asText());
+        if (StringUtils.hasText(line)) {
+          outline.add(line);
         }
       }
       return new AiSyllabusResponse(jianjie, outline, true);
     } catch (Exception ex) {
       throw new AppException(HttpStatus.BAD_GATEWAY, "AI 大纲结果解析失败，请重试");
     }
+  }
+
+  private String normalizeOutlineLine(String line) {
+    if (line == null) {
+      return "";
+    }
+    String result = line.trim();
+    String previous;
+    do {
+      previous = result;
+      result =
+          result
+              .replaceFirst("^\\s*\\(?\\d{1,2}\\)?[\\.、．)]\\s*", "")
+              .replaceFirst("^\\s*[（(][一二三四五六七八九十]+[）)]\\s*", "")
+              .replaceFirst("^\\s*[一二三四五六七八九十]+[、\\.．]\\s*", "")
+              .replaceFirst("^\\s*[-*•]\\s*", "")
+              .trim();
+    } while (!result.equals(previous));
+    return result;
   }
 
   private AiRecommendation mockRecommendation(List<Course> candidates, double creditCap) {

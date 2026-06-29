@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
@@ -37,6 +38,8 @@ public class Course {
   private String timeSlot;
   @Size(max = 64, message = "课程类型长度不能超过64位")
   private String courseType;
+  @Min(value = 1, message = "年级限制不能小于1")
+  @Max(value = 8, message = "年级限制不能大于8")
   private Integer gradeLimit;
 
   public String getId() {

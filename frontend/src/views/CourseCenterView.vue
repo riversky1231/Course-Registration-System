@@ -11,6 +11,7 @@
           @keyup.enter="mod.search"
           @clear="mod.search"
         />
+        <el-button :icon="'Search'" @click="mod.search">搜索</el-button>
         <el-button v-if="allowCreate" type="primary" :icon="'Plus'" @click="mod.openCreate">新增课程</el-button>
       </template>
     </PageHeader>
@@ -49,6 +50,8 @@
               <span><el-icon><School /></el-icon>{{ course.dept || "未设学院" }}</span>
               <span><el-icon><Reading /></el-icon>{{ course.teacherName || "待安排教师" }}</span>
               <span><el-icon><Clock /></el-icon>{{ course.timeSlot || "未排课" }}</span>
+              <span><el-icon><CollectionTag /></el-icon>{{ course.courseType || "未分类" }}</span>
+              <span><el-icon><Medal /></el-icon>{{ course.gradeLimit ? "大" + course.gradeLimit + "及以上" : "不限年级" }}</span>
             </div>
 
             <p class="course-intro">{{ course.jianjie || "暂无课程简介。" }}</p>
@@ -113,10 +116,27 @@
     />
 
     <!-- 学生列表弹窗 -->
-    <el-dialog v-model="studentDialog.visible" :title="`《${studentDialog.courseName}》- 学生列表`" width="900px" :close-on-click-modal="false">
+    <el-dialog
+      v-model="studentDialog.visible"
+      title="学生列表"
+      width="960px"
+      class="student-list-dialog"
+      :close-on-click-modal="false"
+    >
       <div v-loading="studentDialog.loading">
+        <div class="student-list-head">
+          <div class="student-list-title">
+            <p class="eyebrow">课程学生名单</p>
+            <h3>{{ studentDialog.courseName || "未命名课程" }}</h3>
+          </div>
+          <div class="student-list-meta">
+            <el-tag effect="light" round>共 {{ sortedStudentRows.length }} 人</el-tag>
+            <el-tag type="info" effect="plain" round>每页 {{ studentDialog.pageSize }} 条</el-tag>
+          </div>
+        </div>
+
         <div class="student-sort-bar">
-          <span class="sort-label">排序：</span>
+          <span class="sort-label">排序</span>
           <el-radio-group v-model="studentDialog.sortBy" size="small" @change="applyStudentSort">
             <el-radio-button value="default">默认</el-radio-button>
             <el-radio-button value="score-desc">成绩降序</el-radio-button>
@@ -126,8 +146,9 @@
           </el-radio-group>
         </div>
 
-        <el-empty v-if="!studentDialog.students.length" description="暂无选课学生" :image-size="80" />
-        <el-table v-else :data="studentDialog.students" class="data-table" stripe>
+        <el-empty v-if="!sortedStudentRows.length" description="暂无选课学生" :image-size="80" />
+        <template v-else>
+          <el-table :data="pagedStudentRows" class="data-table" stripe>
           <el-table-column prop="studentName" label="姓名" min-width="120" show-overflow-tooltip />
           <el-table-column label="学号" min-width="140">
             <template #default="{ row }">{{ row.studentNumb || "-" }}</template>
@@ -169,7 +190,19 @@
           <el-table-column label="选课时间" min-width="160">
             <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
           </el-table-column>
-        </el-table>
+          </el-table>
+
+          <div class="student-pager">
+            <el-pagination
+              background
+              layout="total, prev, pager, next"
+              :total="sortedStudentRows.length"
+              :current-page="studentDialog.page"
+              :page-size="studentDialog.pageSize"
+              @current-change="handleStudentPageChange"
+            />
+          </div>
+        </template>
       </div>
     </el-dialog>
   </div>
@@ -199,7 +232,8 @@ const studentDialog = reactive({
   loading: false,
   courseName: "",
   sortBy: "default",
-  students: [],
+  page: 1,
+  pageSize: 10,
   rawStudents: [],
 });
 const editingGradeId = ref("");
@@ -212,6 +246,33 @@ const allowDelete = computed(() => canDelete(auth.role, "courses"));
 const departments = computed(() =>
   [...new Set(references.courses.map((c) => safeText(c.dept, "")).filter(Boolean))].sort()
 );
+const sortedStudentRows = computed(() => {
+  const list = [...studentDialog.rawStudents];
+  switch (studentDialog.sortBy) {
+    case "score-desc":
+      return list.sort((a, b) => {
+        const sa = a.graded && a.score != null ? a.score : -1;
+        const sb = b.graded && b.score != null ? b.score : -1;
+        return sb - sa;
+      });
+    case "score-asc":
+      return list.sort((a, b) => {
+        const sa = a.graded && a.score != null ? a.score : 999;
+        const sb = b.graded && b.score != null ? b.score : 999;
+        return sa - sb;
+      });
+    case "name":
+      return list.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || "", "zh"));
+    case "numb":
+      return list.sort((a, b) => (a.studentNumb || "").localeCompare(b.studentNumb || ""));
+    default:
+      return list;
+  }
+});
+const pagedStudentRows = computed(() => {
+  const start = (studentDialog.page - 1) * studentDialog.pageSize;
+  return sortedStudentRows.value.slice(start, start + studentDialog.pageSize);
+});
 
 const mod = useModule("courses", {
   extraParams: () => ({
@@ -221,12 +282,25 @@ const mod = useModule("courses", {
     maxScore: filters.maxScore ?? "",
     onlyAvailable: filters.onlyAvailable || "",
   }),
-  emptyForm: () => ({ name: "", numb: "", score: 0, tid: "", jianjie: "", dept: "", maxStudents: 0, timeSlot: "" }),
+  emptyForm: () => ({
+    name: "",
+    numb: "",
+    score: 0,
+    tid: "",
+    jianjie: "",
+    dept: "",
+    maxStudents: 0,
+    timeSlot: "",
+    courseType: "",
+    gradeLimit: null,
+  }),
   normalize: (form) => {
     const payload = { ...form };
     payload.maxStudents = Number.isFinite(Number(payload.maxStudents)) ? Number(payload.maxStudents) : 0;
     payload.timeSlot = safeText(payload.timeSlot, "").trim();
     payload.dept = safeText(payload.dept, "").trim();
+    payload.courseType = safeText(payload.courseType, "").trim();
+    payload.gradeLimit = payload.gradeLimit == null || payload.gradeLimit === "" ? null : Number(payload.gradeLimit);
     if (auth.role === "teacher") delete payload.tid;
     return payload;
   },
@@ -285,46 +359,25 @@ async function openStudentList(course) {
   studentDialog.visible = true;
   studentDialog.loading = true;
   studentDialog.sortBy = "default";
+  studentDialog.page = 1;
+  cancelGradeEdit();
   try {
     const data = await getCourseStudents(course.id);
     studentDialog.rawStudents = data || [];
-    studentDialog.students = [...studentDialog.rawStudents];
   } catch (error) {
     ElMessage.error(error.message || "加载学生列表失败");
     studentDialog.rawStudents = [];
-    studentDialog.students = [];
   } finally {
     studentDialog.loading = false;
   }
 }
 
 function applyStudentSort() {
-  const list = [...studentDialog.rawStudents];
-  switch (studentDialog.sortBy) {
-    case "score-desc":
-      list.sort((a, b) => {
-        const sa = a.graded && a.score != null ? a.score : -1;
-        const sb = b.graded && b.score != null ? b.score : -1;
-        return sb - sa;
-      });
-      break;
-    case "score-asc":
-      list.sort((a, b) => {
-        const sa = a.graded && a.score != null ? a.score : 999;
-        const sb = b.graded && b.score != null ? b.score : 999;
-        return sa - sb;
-      });
-      break;
-    case "name":
-      list.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || "", "zh"));
-      break;
-    case "numb":
-      list.sort((a, b) => (a.studentNumb || "").localeCompare(b.studentNumb || ""));
-      break;
-    default:
-      break;
-  }
-  studentDialog.students = list;
+  studentDialog.page = 1;
+}
+
+function handleStudentPageChange(page) {
+  studentDialog.page = page;
 }
 
 function startGradeEdit(row) {
@@ -340,7 +393,11 @@ function cancelGradeEdit() {
 async function saveGrade(row) {
   const score = normalizeOptionalNumber(gradeInputValue.value);
   try {
-    await updateModule(ENDPOINTS.selections, row.id, { score });
+    await updateModule(ENDPOINTS.selections, row.id, {
+      courseId: row.courseId,
+      studentId: row.studentId,
+      score,
+    });
     row.score = score;
     row.graded = score != null;
     ElMessage.success(`已成功更新 ${row.studentName || "该学生"} 的成绩`);
@@ -442,21 +499,74 @@ onMounted(() => {
 
 .course-actions .el-button { flex: 1; }
 
-.student-sort-bar {
+.student-list-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.student-list-title { min-width: 0; }
+.student-list-title h3 {
+  margin: 3px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.student-list-meta {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: none;
+  flex-wrap: wrap;
+}
+
+.student-sort-bar {
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
 }
 
 .sort-label {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   color: var(--ink-soft);
   white-space: nowrap;
 }
 
+.student-sort-bar :deep(.el-radio-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.student-sort-bar :deep(.el-radio-button__inner) {
+  border-left: var(--el-border);
+  border-radius: 4px;
+}
+
+.student-pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 .grade-cell { display: flex; align-items: center; }
 .grade-input { width: 110px; }
+
+@media (max-width: 760px) {
+  .student-list-head { flex-direction: column; }
+  .student-list-meta { justify-content: flex-start; }
+}
 </style>

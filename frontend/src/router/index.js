@@ -21,6 +21,7 @@ const routes = [
       { path: "courses", name: "courses", component: () => import("@/views/CourseCenterView.vue"), meta: { view: "courses" } },
       { path: "selections", name: "selections", component: () => import("@/views/SelectionView.vue"), meta: { view: "selections" } },
       { path: "teachers", name: "teachers", component: () => import("@/views/PeopleView.vue"), meta: { view: "teachers" } },
+      { path: "students", name: "students", component: () => import("@/views/PeopleView.vue"), meta: { view: "students" } },
       { path: "admins", name: "admins", component: () => import("@/views/AdminView.vue"), meta: { view: "admins" } },
       { path: "selection-windows", name: "selectionWindows", component: () => import("@/views/SelectionWindowView.vue"), meta: { view: "selectionWindows" } },
       { path: "evaluations", name: "evaluations", component: () => import("@/views/EvaluationView.vue"), meta: { view: "evaluations" } },

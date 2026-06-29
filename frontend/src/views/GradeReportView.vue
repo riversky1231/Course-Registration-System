@@ -62,6 +62,7 @@
               @keyup.enter="search"
               @clear="search"
             />
+            <el-button :icon="'Search'" @click="search">搜索</el-button>
             <el-space>
               <el-tag type="success" effect="light" round>已出 {{ report.gradedCourses }} 门</el-tag>
               <el-tag type="warning" effect="light" round>待出 {{ report.pendingCourses }} 门</el-tag>
