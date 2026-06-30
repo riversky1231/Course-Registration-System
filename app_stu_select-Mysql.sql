@@ -213,8 +213,13 @@ FROM seq
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
+numb = VALUES(numb),
 tname = VALUES(tname),
-tposition = VALUES(tposition);
+tposition = VALUES(tposition),
+tbirthday = VALUES(tbirthday),
+ttel = VALUES(ttel),
+age = VALUES(age),
+gender = VALUES(gender);
 
 -- ============ 演示数据：学生（包含年级信息） ============
 INSERT INTO tb_student (id, username, password, numb, sname, sdept, sbirthday, tele, email, ssex, age, smajor, sclass, grade, enrollment_year) VALUES
@@ -267,10 +272,18 @@ FROM seq
 ON DUPLICATE KEY UPDATE
 username = VALUES(username),
 password = VALUES(password),
+numb = VALUES(numb),
 sname = VALUES(sname),
 sdept = VALUES(sdept),
+sbirthday = VALUES(sbirthday),
+tele = VALUES(tele),
+email = VALUES(email),
+ssex = VALUES(ssex),
+age = VALUES(age),
 smajor = VALUES(smajor),
-grade = VALUES(grade);
+sclass = VALUES(sclass),
+grade = VALUES(grade),
+enrollment_year = VALUES(enrollment_year);
 
 -- ============ 演示数据：课程（包含类型和年级限制） ============
 INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, time_slot, course_type, grade_limit) VALUES
@@ -286,6 +299,40 @@ INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, 
 ('C4010', '艺术鉴赏', 1.5, 'K23010', 'T2002', '艺术与美学入门', '艺术学院', 100, '周五第5-6节', '通识选修', NULL),
 ('C4011', '创新创业', 1.5, 'K23011', 'T2003', '创业思维与实践', '创新学院', 80, '周三第7-8节', '通识选修', NULL),
 ('C4012', '音乐欣赏', 1.5, 'K23012', 'T2001', '音乐基础与鉴赏', '艺术学院', 100, '周四第7-8节', '通识选修', NULL)
+ON DUPLICATE KEY UPDATE
+name = VALUES(name),
+score = VALUES(score),
+numb = VALUES(numb),
+tid = VALUES(tid),
+jianjie = VALUES(jianjie),
+dept = VALUES(dept),
+max_students = VALUES(max_students),
+time_slot = VALUES(time_slot),
+course_type = VALUES(course_type),
+grade_limit = VALUES(grade_limit);
+
+-- ============ 演示数据：补全批量教师的授课课程 ============
+-- T2001~T2003 已在核心课程中承担教学；这里为 T2004~T2030 补充专题课，
+-- 避免教师账号存在但没有课程、学生、成绩和评教数据。
+INSERT INTO tb_course (id, name, score, numb, tid, jianjie, dept, max_students, time_slot, course_type, grade_limit)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 30
+)
+SELECT
+  CONCAT('C42', LPAD(n, 2, '0')),
+  CONCAT(ELT(1 + MOD(n, 8), '软件工程', '数据分析', '网络安全', '智能系统', '英语表达', '视觉设计', '创新实践', '项目管理'), '专题', LPAD(n, 2, '0')),
+  1.5 + MOD(n, 3) * 0.5,
+  CONCAT('K24T', LPAD(n, 3, '0')),
+  CONCAT('T', 2000 + n),
+  CONCAT('面向跨专业学生的专题实践课，补全教师 T', 2000 + n, ' 的授课链路'),
+  ELT(1 + MOD(n, 5), '信息工程学院', '数据科学学院', '外国语学院', '艺术学院', '创新学院'),
+  45,
+  CONCAT('线上专题', LPAD(n, 2, '0')),
+  IF(MOD(n, 4) = 0, '通识选修', '专业选修'),
+  NULL
+FROM seq
 ON DUPLICATE KEY UPDATE
 name = VALUES(name),
 score = VALUES(score),
@@ -414,6 +461,36 @@ score = VALUES(score),
 graded = VALUES(graded),
 createtime = VALUES(createtime);
 
+-- 【高年级学生：补全先修链路与高级课程在修记录】
+-- 让 C4005/C4006/C4007 不再只存在于先修配置中，而是拥有真实学生、教师、成绩依赖。
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime) VALUES
+('RA5101', 'C4001', 'S3006', 'T2001', 82, 1, '2024-03-02 09:00:00'),
+('RA5102', 'C4002', 'S3006', 'T2002', 79, 1, '2024-03-02 09:05:00'),
+('RA5103', 'C4003', 'S3006', 'T2002', 76, 1, '2024-07-02 09:00:00'),
+('RA5104', 'C4004', 'S3006', 'T2001', 74, 1, '2024-07-02 09:05:00'),
+('RA5105', 'C4005', 'S3006', 'T2003', NULL, 0, '2025-03-02 09:00:00'),
+('RA5111', 'C4001', 'S3007', 'T2001', 88, 1, '2024-03-03 09:00:00'),
+('RA5112', 'C4002', 'S3007', 'T2002', 84, 1, '2024-03-03 09:05:00'),
+('RA5113', 'C4003', 'S3007', 'T2002', 81, 1, '2024-07-03 09:00:00'),
+('RA5114', 'C4004', 'S3007', 'T2001', 86, 1, '2024-07-03 09:05:00'),
+('RA5115', 'C4005', 'S3007', 'T2003', 83, 1, '2025-01-10 09:00:00'),
+('RA5116', 'C4006', 'S3007', 'T2001', 78, 1, '2025-07-10 09:00:00'),
+('RA5117', 'C4007', 'S3007', 'T2003', NULL, 0, '2025-09-02 09:00:00'),
+('RA5121', 'C4002', 'S3010', 'T2002', 72, 1, '2024-03-04 09:00:00'),
+('RA5122', 'C4003', 'S3010', 'T2002', 69, 1, '2024-07-04 09:00:00'),
+('RA5123', 'C4006', 'S3010', 'T2001', NULL, 0, '2025-09-03 09:00:00'),
+('RA5131', 'C4001', 'S3011', 'T2001', 68, 1, '2024-03-05 09:00:00'),
+('RA5132', 'C4002', 'S3011', 'T2002', 73, 1, '2024-03-05 09:05:00'),
+('RA5133', 'C4003', 'S3011', 'T2002', 71, 1, '2024-07-05 09:00:00'),
+('RA5134', 'C4008', 'S3011', 'T2003', NULL, 0, '2025-09-04 09:00:00')
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
 -- 批量为新生 S3004~S3080 生成选课记录，让选课/成绩页面数据充足
 -- 通识必修《大学英语》(C4009)：已录入成绩
 INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
@@ -432,8 +509,12 @@ SELECT
   DATE_ADD('2025-03-01 09:00:00', INTERVAL n MINUTE)
 FROM seq
 ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
 score = VALUES(score),
-graded = VALUES(graded);
+graded = VALUES(graded),
+createtime = VALUES(createtime);
 
 -- 通识选修《创新创业》(C4011)：本学期在读，未录入成绩
 INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
@@ -452,7 +533,60 @@ SELECT
   DATE_ADD('2025-09-01 09:00:00', INTERVAL n MINUTE)
 FROM seq
 ON DUPLICATE KEY UPDATE
-graded = VALUES(graded);
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+-- 为每位批量教师的专题课补充学生选课记录：一条已结课成绩、一条在修记录。
+-- 这样教师端可以看到自己课程、学生列表、待录成绩和历史成绩。
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 30
+)
+SELECT
+  CONCAT('RT', LPAD(n, 4, '0')),
+  CONCAT('C42', LPAD(n, 2, '0')),
+  CONCAT('S', 3000 + n),
+  CONCAT('T', 2000 + n),
+  70 + MOD(n * 3, 26),
+  1,
+  DATE_ADD('2025-05-01 09:00:00', INTERVAL n MINUTE)
+FROM seq
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
+
+INSERT INTO tb_sct (id, courseid, studentId, teaid, score, graded, createtime)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 30
+)
+SELECT
+  CONCAT('RU', LPAD(n, 4, '0')),
+  CONCAT('C42', LPAD(n, 2, '0')),
+  CONCAT('S', 3030 + n),
+  CONCAT('T', 2000 + n),
+  NULL,
+  0,
+  DATE_ADD('2025-09-01 10:00:00', INTERVAL n MINUTE)
+FROM seq
+ON DUPLICATE KEY UPDATE
+courseid = VALUES(courseid),
+studentId = VALUES(studentId),
+teaid = VALUES(teaid),
+score = VALUES(score),
+graded = VALUES(graded),
+createtime = VALUES(createtime);
 
 -- ============ 演示数据：选课时间窗口（长期开放，便于本地测试） ============
 INSERT INTO tb_selection_window (id, action_type, name, start_time, end_time, enabled, description) VALUES
@@ -481,3 +615,121 @@ rating = VALUES(rating),
 comment = VALUES(comment),
 anonymous = VALUES(anonymous),
 create_time = VALUES(create_time);
+
+-- 高级课程与专题课的评教补充：评教必须依赖已结课且已录入成绩的选课记录。
+INSERT INTO tb_course_evaluation (id, course_id, student_id, teacher_id, rating, comment, anonymous, create_time) VALUES
+('EA7101', 'C4004', 'S3006', 'T2001', 4, '项目练习贴近实际，对后续架构课程帮助很大', 0, '2025-01-15 10:00:00'),
+('EA7102', 'C4005', 'S3007', 'T2003', 5, '案例丰富，设计模式讲解清楚', 1, '2025-07-20 10:00:00'),
+('EA7103', 'C4006', 'S3007', 'T2001', 4, '分布式系统内容扎实，实验难度适中', 0, '2025-07-20 10:05:00'),
+('EA7104', 'C4003', 'S3010', 'T2002', 4, 'SQL 和事务部分讲得比较系统', 1, '2025-01-16 10:00:00')
+ON DUPLICATE KEY UPDATE
+course_id = VALUES(course_id),
+student_id = VALUES(student_id),
+teacher_id = VALUES(teacher_id),
+rating = VALUES(rating),
+comment = VALUES(comment),
+anonymous = VALUES(anonymous),
+create_time = VALUES(create_time);
+
+INSERT INTO tb_course_evaluation (id, course_id, student_id, teacher_id, rating, comment, anonymous, create_time)
+WITH RECURSIVE seq (n) AS (
+  SELECT 4
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 30
+)
+SELECT
+  CONCAT('ET', LPAD(n, 4, '0')),
+  CONCAT('C42', LPAD(n, 2, '0')),
+  CONCAT('S', 3000 + n),
+  CONCAT('T', 2000 + n),
+  3 + MOD(n, 3),
+  CONCAT('专题课内容完整，实践任务与课程目标匹配（T', 2000 + n, '）'),
+  IF(MOD(n, 2) = 0, 1, 0),
+  DATE_ADD('2025-07-25 10:00:00', INTERVAL n MINUTE)
+FROM seq
+ON DUPLICATE KEY UPDATE
+course_id = VALUES(course_id),
+student_id = VALUES(student_id),
+teacher_id = VALUES(teacher_id),
+rating = VALUES(rating),
+comment = VALUES(comment),
+anonymous = VALUES(anonymous),
+create_time = VALUES(create_time);
+
+-- ============ 种子数据依赖自检 ============
+-- 下面结果的 issue_count 应全部为 0；若非 0，说明存在孤立数据或业务依赖不完整。
+SELECT 'course_without_teacher' AS check_item, COUNT(*) AS issue_count
+FROM tb_course c
+LEFT JOIN tb_teacher t ON t.id = c.tid
+WHERE c.tid IS NOT NULL AND t.id IS NULL
+UNION ALL
+SELECT 'selection_without_course', COUNT(*)
+FROM tb_sct s
+LEFT JOIN tb_course c ON c.id = s.courseid
+WHERE c.id IS NULL
+UNION ALL
+SELECT 'selection_without_student', COUNT(*)
+FROM tb_sct s
+LEFT JOIN tb_student st ON st.id = s.studentId
+WHERE st.id IS NULL
+UNION ALL
+SELECT 'selection_without_teacher', COUNT(*)
+FROM tb_sct s
+LEFT JOIN tb_teacher t ON t.id = s.teaid
+WHERE s.teaid IS NOT NULL AND t.id IS NULL
+UNION ALL
+SELECT 'selection_teacher_mismatch', COUNT(*)
+FROM tb_sct s
+JOIN tb_course c ON c.id = s.courseid
+WHERE s.teaid IS NOT NULL AND c.tid IS NOT NULL AND s.teaid <> c.tid
+UNION ALL
+SELECT 'prerequisite_without_course', COUNT(*)
+FROM tb_course_prerequisite p
+LEFT JOIN tb_course c ON c.id = p.course_id
+LEFT JOIN tb_course pc ON pc.id = p.prerequisite_course_id
+WHERE c.id IS NULL OR pc.id IS NULL
+UNION ALL
+SELECT 'mutex_without_course', COUNT(*)
+FROM tb_course_mutex m
+LEFT JOIN tb_course ca ON ca.id = m.course_id_a
+LEFT JOIN tb_course cb ON cb.id = m.course_id_b
+WHERE ca.id IS NULL OR cb.id IS NULL
+UNION ALL
+SELECT 'evaluation_without_parent', COUNT(*)
+FROM tb_course_evaluation e
+LEFT JOIN tb_course c ON c.id = e.course_id
+LEFT JOIN tb_student st ON st.id = e.student_id
+LEFT JOIN tb_teacher t ON t.id = e.teacher_id
+WHERE c.id IS NULL OR st.id IS NULL OR t.id IS NULL
+UNION ALL
+SELECT 'evaluation_teacher_mismatch', COUNT(*)
+FROM tb_course_evaluation e
+JOIN tb_course c ON c.id = e.course_id
+WHERE e.teacher_id IS NOT NULL AND c.tid IS NOT NULL AND e.teacher_id <> c.tid
+UNION ALL
+SELECT 'evaluation_without_graded_selection', COUNT(*)
+FROM tb_course_evaluation e
+LEFT JOIN tb_sct s
+  ON s.courseid = e.course_id
+ AND s.studentId = e.student_id
+ AND s.graded = 1
+WHERE s.id IS NULL
+UNION ALL
+SELECT 'seed_teacher_without_course', COUNT(*)
+FROM tb_teacher t
+LEFT JOIN tb_course c ON c.tid = t.id
+WHERE t.id BETWEEN 'T2001' AND 'T2030' AND c.id IS NULL
+UNION ALL
+SELECT 'seed_course_without_selection', COUNT(*)
+FROM tb_course c
+LEFT JOIN tb_sct s ON s.courseid = c.id
+WHERE (
+    c.id BETWEEN 'C4001' AND 'C4012'
+    OR c.id BETWEEN 'C4204' AND 'C4230'
+  )
+  AND s.id IS NULL
+UNION ALL
+SELECT 'seed_student_without_selection', COUNT(*)
+FROM tb_student st
+LEFT JOIN tb_sct s ON s.studentId = st.id
+WHERE st.id BETWEEN 'S3001' AND 'S3080' AND s.id IS NULL;
